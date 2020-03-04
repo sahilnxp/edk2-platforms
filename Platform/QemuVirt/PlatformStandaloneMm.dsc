@@ -113,6 +113,7 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxAuthVariableSize|0x2800
 !endif
 
+  gEfiMdeModulePkgTokenSpaceGuid.PcdEmuVariableNvModeEnable|TRUE
 ###################################################################################################
 #
 # Components Section - list of the modules and components that will be processed by compilation
