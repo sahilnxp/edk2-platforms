@@ -130,10 +130,9 @@ In112525UploadFirmware (
     ColumnCount = I;
     LineTemp[ColumnCount] = '\0';
 
-    if (LineCount > PcdGet64 (PcdIn112525FwSize)); {
+    if (LineCount > PcdGet64 (PcdIn112525FwSize)) {
       DPAA_ERROR_MSG ("Inphi Firmware larger than expected\n");
       return EFI_INVALID_PARAMETER;
-
     }
 
     TokenStartPtr = SkipSeparators (LineTemp);
@@ -585,7 +584,7 @@ In112525S03LaneRecovery (
   Dpaa2PhyRegisterRead (Dpaa2Phy, MDIO_MMD_VEND1, PHYSTAT_REG1);
   Dpaa2PhyRegisterRead (Dpaa2Phy, MDIO_MMD_VEND1, PHYSTAT_REG2);
 
-  DEBUG ((DEBUG_ERROR, "TX PLL Lock Success for lane %d \n", Lane));
+  DEBUG ((DEBUG_INFO, "TX PLL Lock Success for lane %d \n", Lane));
 
   if (TxPllLockTest (Dpaa2Phy, NUMBER_OF_LANES)) {
     DEBUG ((DEBUG_INFO, "All PLLs Locked \n"));

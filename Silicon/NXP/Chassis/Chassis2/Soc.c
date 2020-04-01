@@ -1,7 +1,7 @@
 /** @Soc.c
   SoC specific Library containg functions to initialize various SoC components
 
-  Copyright 2017 NXP
+  Copyright 2017, 2020 NXP
 
   This program and the accompanying materials
   are licensed and made available under the terms and conditions of the BSD License
@@ -18,10 +18,11 @@
 #include <DramInfo.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib/MemLibInternals.h>
-#include <Library/BeIoLib.h>
+#include <Library/IoAccessLib.h>
 #include <Library/DebugLib.h>
 #include <Library/FpgaLib.h>
 #include <Library/IfcLib.h>
+#include <Library/IoAccessLib.h>
 #include <Library/IoLib.h>
 #include <Library/PcdLib.h>
 #include <Library/PrintLib.h>
@@ -29,6 +30,9 @@
 
 #include "Erratum.h"
 #include "Soc.h"
+
+extern VOID PrintBoardPersonality (VOID);
+extern UINTN GetBoardSysClk (VOID);
 
 /**
   Calculate the frequency of various controllers and
@@ -161,19 +165,19 @@ ConfigScfgMux (VOID)
   // LS1046A
   // USB3 is not used, configure mux to IIC4_SCL/IIC4_SDA
   if (PcdGetBool (PcdMuxToUsb3)) {
-    BeMmioWrite32 ((UINTN)&Scfg->RcwPMuxCr0, CCSR_SCFG_RCWPMUXCRO_SELCR_USB);
+    SwapMmioWrite32 ((UINTN)&Scfg->RcwPMuxCr0, CCSR_SCFG_RCWPMUXCRO_SELCR_USB);
   } else {
-    BeMmioWrite32 ((UINTN)&Scfg->RcwPMuxCr0, CCSR_SCFG_RCWPMUXCRO_NOT_SELCR_USB);
+    SwapMmioWrite32 ((UINTN)&Scfg->RcwPMuxCr0, CCSR_SCFG_RCWPMUXCRO_NOT_SELCR_USB);
   }
-  BeMmioWrite32 ((UINTN)&Scfg->UsbDrvVBusSelCr, CCSR_SCFG_USBDRVVBUS_SELCR_USB1);
+  SwapMmioWrite32 ((UINTN)&Scfg->UsbDrvVBusSelCr, CCSR_SCFG_USBDRVVBUS_SELCR_USB1);
   UsbPwrFault = (CCSR_SCFG_USBPWRFAULT_DEDICATED <<
                 CCSR_SCFG_USBPWRFAULT_USB3_SHIFT) |
                 (CCSR_SCFG_USBPWRFAULT_DEDICATED <<
                 CCSR_SCFG_USBPWRFAULT_USB2_SHIFT) |
                 (CCSR_SCFG_USBPWRFAULT_SHARED <<
                 CCSR_SCFG_USBPWRFAULT_USB1_SHIFT);
-  BeMmioWrite32 ((UINTN)&Scfg->UsbPwrFaultSelCr, UsbPwrFault);
-  BeMmioWrite32 ((UINTN)&Scfg->UsbPwrFaultSelCr, UsbPwrFault);
+  SwapMmioWrite32 ((UINTN)&Scfg->UsbPwrFaultSelCr, UsbPwrFault);
+  SwapMmioWrite32 ((UINTN)&Scfg->UsbPwrFaultSelCr, UsbPwrFault);
 }
 
 STATIC
@@ -187,7 +191,7 @@ ApplyErratums (
   Scfg = (VOID *)PcdGet64 (PcdScfgBaseAddr);
 
   /* Make SEC, SATA and USB reads and writes snoopable */
-  MmioSetBitsBe32((UINTN)&Scfg->SnpCnfgCr, CCSR_SCFG_SNPCNFGCR_SECRDSNP |
+  SwapMmioOr32((UINTN)&Scfg->SnpCnfgCr, CCSR_SCFG_SNPCNFGCR_SECRDSNP |
     CCSR_SCFG_SNPCNFGCR_SECWRSNP | CCSR_SCFG_SNPCNFGCR_USB1RDSNP |
     CCSR_SCFG_SNPCNFGCR_USB1WRSNP | CCSR_SCFG_SNPCNFGCR_USB2RDSNP |
     CCSR_SCFG_SNPCNFGCR_USB2WRSNP | CCSR_SCFG_SNPCNFGCR_USB3RDSNP |
@@ -250,7 +254,7 @@ SocInit (
   ConfigScfgMux ();
 
   //Invert AQR105 IRQ pins interrupt polarity
-  MmioWriteBe32 ((UINTN)&Scfg->IntpCr, PcdGet32 (PcdScfgIntPol));
+  SwapMmioWrite32 ((UINTN)&Scfg->IntpCr, PcdGet32 (PcdScfgIntPol));
 
 
   return;

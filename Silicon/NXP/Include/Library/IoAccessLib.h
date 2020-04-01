@@ -1,34 +1,92 @@
-/** BeIoLib.h
+/** @file
  *
- *  Copyright 2017 NXP
+ *  Copyright 2017-2019 NXP
  *
- *  This program and the accompanying materials
- *  are licensed and made available under the terms and conditions of the BSD License
- *  which accompanies this distribution.  The full text of the license may be found at
- *  http://opensource.org/licenses/bsd-license.php
- *
- *  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+ * SPDX-License-Identifier: BSD-2-Clause-Patent
  *
  **/
 
-#ifndef __BE_IOLIB_H__
-#define __BE_IOLIB_H__
+#ifndef IO_ACCESS_LIB_H_
+#define IO_ACCESS_LIB_H_
 
 #include <Base.h>
 
+///
+///  Structure to have pointer to R/W
+///  Mmio operations for 16 bits.
+///
+typedef struct _MMIO_OPERATIONS_16 {
+  UINT16 (*Read16) (UINTN Address);
+  UINT16 (*Write16) (UINTN Address, UINT16 Value);
+  UINT16 (*Or16) (UINTN Address, UINT16 OrData);
+  UINT16 (*And16) (UINTN Address, UINT16 AndData);
+  UINT16 (*AndThenOr16) (UINTN Address, UINT16 AndData, UINT16 OrData);
+} MMIO_OPERATIONS_16;
+
+///
+///  Structure to have pointer to R/W
+///  Mmio operations for 32 bits.
+///
+typedef struct _MMIO_OPERATIONS_32 {
+  UINT32 (*Read32) (UINTN Address);
+  UINT32 (*Write32) (UINTN Address, UINT32 Value);
+  UINT32 (*Or32) (UINTN Address, UINT32 OrData);
+  UINT32 (*And32) (UINTN Address, UINT32 AndData);
+  UINT32 (*AndThenOr32) (UINTN Address, UINT32 AndData, UINT32 OrData);
+} MMIO_OPERATIONS_32;
+
+///
+///  Structure to have pointer to R/W
+///  Mmio operations for 64 bits.
+///
+typedef struct _MMIO_OPERATIONS_64 {
+  UINT64 (*Read64) (UINTN Address);
+  UINT64 (*Write64) (UINTN Address, UINT64 Value);
+  UINT64 (*Or64) (UINTN Address, UINT64 OrData);
+  UINT64 (*And64) (UINTN Address, UINT64 AndData);
+  UINT64 (*AndThenOr64) (UINTN Address, UINT64 AndData, UINT64 OrData);
+} MMIO_OPERATIONS_64;
+
 /**
-  MmioRead8 for Big-Endian modules.
+  Function to return pointer to 16 bit Mmio operations.
 
-  @param  Address The MMIO register to read.
+  @param  Swap  Flag to tell if Swap is needed or not
+                on Mmio Operations.
 
-  @return The value read.
+  @return       Pointer to Mmio Operations.
 
 **/
-UINT8
-EFIAPI
-BeMmioRead8 (
-  IN  UINTN     Address
+MMIO_OPERATIONS_16 *
+GetMmioOperations16  (
+  IN  BOOLEAN  Swap
+  );
+
+/**
+  Function to return pointer to 32 bit Mmio operations.
+
+  @param  Swap  Flag to tell if Swap is needed or not
+                on Mmio Operations.
+
+  @return       Pointer to Mmio Operations.
+
+**/
+MMIO_OPERATIONS_32 *
+GetMmioOperations32  (
+  IN  BOOLEAN  Swap
+  );
+
+/**
+  Function to return pointer to 64 bit Mmio operations.
+
+  @param  Swap  Flag to tell if Swap is needed or not
+                on Mmio Operations.
+
+  @return       Pointer to Mmio Operations.
+
+**/
+MMIO_OPERATIONS_64 *
+GetMmioOperations64  (
+  IN  BOOLEAN  Swap
   );
 
 /**
@@ -41,7 +99,7 @@ BeMmioRead8 (
 **/
 UINT16
 EFIAPI
-BeMmioRead16 (
+SwapMmioRead16 (
   IN  UINTN     Address
   );
 
@@ -55,7 +113,7 @@ BeMmioRead16 (
 **/
 UINT32
 EFIAPI
-BeMmioRead32 (
+SwapMmioRead32 (
   IN  UINTN     Address
   );
 
@@ -69,22 +127,8 @@ BeMmioRead32 (
 **/
 UINT64
 EFIAPI
-BeMmioRead64 (
+SwapMmioRead64 (
   IN  UINTN     Address
-  );
-
-/**
-  MmioWrite8 for Big-Endian modules.
-
-  @param  Address The MMIO register to write.
-  @param  Value   The value to write to the MMIO register.
-
-**/
-UINT8
-EFIAPI
-BeMmioWrite8 (
-  IN  UINTN     Address,
-  IN  UINT8     Value
   );
 
 /**
@@ -96,7 +140,7 @@ BeMmioWrite8 (
 **/
 UINT16
 EFIAPI
-BeMmioWrite16 (
+SwapMmioWrite16 (
   IN  UINTN     Address,
   IN  UINT16    Value
   );
@@ -110,7 +154,7 @@ BeMmioWrite16 (
 **/
 UINT32
 EFIAPI
-BeMmioWrite32 (
+SwapMmioWrite32 (
   IN  UINTN     Address,
   IN  UINT32    Value
   );
@@ -124,27 +168,9 @@ BeMmioWrite32 (
 **/
 UINT64
 EFIAPI
-BeMmioWrite64 (
+SwapMmioWrite64 (
   IN  UINTN     Address,
   IN  UINT64    Value
-  );
-
-/**
-  MmioAndThenOr8 for Big-Endian modules.
-
-  @param  Address The MMIO register to write.
-  @param  AndData The value to AND with the read value from the MMIO register.
-  @param  OrData  The value to OR with the result of the AND operation.
-
-  @return The value written back to the MMIO register.
-
-**/
-UINT8
-EFIAPI
-BeMmioAndThenOr8 (
-  IN  UINTN     Address,
-  IN  UINT8     AndData,
-  IN  UINT8     OrData
   );
 
 /**
@@ -159,7 +185,7 @@ BeMmioAndThenOr8 (
 **/
 UINT16
 EFIAPI
-BeMmioAndThenOr16 (
+SwapMmioAndThenOr16 (
   IN  UINTN     Address,
   IN  UINT16    AndData,
   IN  UINT16    OrData
@@ -177,7 +203,7 @@ BeMmioAndThenOr16 (
 **/
 UINT32
 EFIAPI
-BeMmioAndThenOr32 (
+SwapMmioAndThenOr32 (
   IN  UINTN     Address,
   IN  UINT32    AndData,
   IN  UINT32    OrData
@@ -195,26 +221,10 @@ BeMmioAndThenOr32 (
 **/
 UINT64
 EFIAPI
-BeMmioAndThenOr64 (
+SwapMmioAndThenOr64 (
   IN  UINTN     Address,
   IN  UINT64    AndData,
   IN  UINT64    OrData
-  );
-
-/**
-  MmioOr8 for Big-Endian modules.
-
-  @param  Address The MMIO register to write.
-  @param  OrData  The value to OR with the read value from the MMIO register.
-
-  @return The value written back to the MMIO register.
-
-**/
-UINT8
-EFIAPI
-BeMmioOr8 (
-  IN  UINTN     Address,
-  IN  UINT8     OrData
   );
 
 /**
@@ -228,7 +238,7 @@ BeMmioOr8 (
 **/
 UINT16
 EFIAPI
-BeMmioOr16 (
+SwapMmioOr16 (
   IN  UINTN     Address,
   IN  UINT16    OrData
   );
@@ -244,7 +254,7 @@ BeMmioOr16 (
 **/
 UINT32
 EFIAPI
-BeMmioOr32 (
+SwapMmioOr32 (
   IN  UINTN     Address,
   IN  UINT32    OrData
   );
@@ -260,25 +270,9 @@ BeMmioOr32 (
 **/
 UINT64
 EFIAPI
-BeMmioOr64 (
+SwapMmioOr64 (
   IN  UINTN     Address,
   IN  UINT64    OrData
-  );
-
-/**
-  MmioAnd8 for Big-Endian modules.
-
-  @param  Address The MMIO register to write.
-  @param  AndData The value to AND with the read value from the MMIO register.
-
-  @return The value written back to the MMIO register.
-
-**/
-UINT8
-EFIAPI
-BeMmioAnd8 (
-  IN  UINTN     Address,
-  IN  UINT8     AndData
   );
 
 /**
@@ -292,7 +286,7 @@ BeMmioAnd8 (
 **/
 UINT16
 EFIAPI
-BeMmioAnd16 (
+SwapMmioAnd16 (
   IN  UINTN     Address,
   IN  UINT16    AndData
   );
@@ -308,7 +302,7 @@ BeMmioAnd16 (
 **/
 UINT32
 EFIAPI
-BeMmioAnd32 (
+SwapMmioAnd32 (
   IN  UINTN     Address,
   IN  UINT32    AndData
   );
@@ -324,9 +318,9 @@ BeMmioAnd32 (
 **/
 UINT64
 EFIAPI
-BeMmioAnd64 (
+SwapMmioAnd64 (
   IN  UINTN     Address,
   IN  UINT64    AndData
   );
 
-#endif /* _BE_IOLIB_H */
+#endif /* IO_ACCESS_LIB_H_ */

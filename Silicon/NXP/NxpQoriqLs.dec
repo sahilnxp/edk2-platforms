@@ -2,7 +2,7 @@
 #
 #  Copyright 2017-2020 NXP
 #
-#  SPDX-License-Identifier: BSD-2-Clause
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
 [Defines]
@@ -22,6 +22,9 @@
   ##  @libraryclass  Provides APIs needed to get input clocks of various IP modules in SOC
   #   This library is only intended to be used by NXP SOC based Platforms.
   SocClockLib|Include/Library/SocClockLib.h
+
+  ##  @libraryclass  Provides services to read/write to I2c devices
+  I2cLib|Include/Library/I2cLib.h
 
 [Guids.common]
   gNxpQoriqLsTokenSpaceGuid      = {0x98657342, 0x4aee, 0x4fc6, {0xbc, 0xb5, 0xff, 0x45, 0xb7, 0xa8, 0x71, 0xf2}}
@@ -130,7 +133,6 @@
   gNxpQoriqLsTokenSpaceGuid.PcdPcieExp4SysAddr|0x0|UINT64|0x000001D8
   gNxpQoriqLsTokenSpaceGuid.PcdPcieExp5SysAddr|0x0|UINT64|0x000001D9
   gNxpQoriqLsTokenSpaceGuid.PcdPcieExp6SysAddr|0x0|UINT64|0x000001DA
-  gNxpQoriqLsTokenSpaceGuid.PcdPciCfgShiftEnable|FALSE|BOOLEAN|0x000001DB
 
   #
   # IFC PCDs
@@ -246,6 +248,14 @@
   gNxpQoriqLsTokenSpaceGuid.PcdQspiErratumA008886|FALSE|BOOLEAN|0x00000319
 
   #
+  # GpioControllers' Pcds
+  #
+  gNxpQoriqLsTokenSpaceGuid.PcdNumGpioController|0|UINT32|0x00000325
+  gNxpQoriqLsTokenSpaceGuid.PcdGpioModuleBaseAddress|0|UINT64|0x00000326
+  gNxpQoriqLsTokenSpaceGuid.PcdGpioControllerOffset|0|UINT64|0x00000327
+  gNxpQoriqLsTokenSpaceGuid.PcdGpioControllerBigEndian|TRUE|BOOLEAN|0x00000328
+
+  #
   # SATA PCDs
   #
   gNxpQoriqLsTokenSpaceGuid.PcdNumSataController|0x0|UINT32|0x00000350
@@ -277,8 +287,10 @@
 [PcdsFeatureFlag.common]
   gNxpQoriqLsTokenSpaceGuid.PcdQmanBigEndian|TRUE|BOOLEAN|0x00000359
   gNxpQoriqLsTokenSpaceGuid.PcdBmanBigEndian|TRUE|BOOLEAN|0x00000360
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cErratumA009203|FALSE|BOOLEAN|0x00000361
 
 [PcdsDynamic.common]
   gNxpQoriqLsTokenSpaceGuid.PcdSocSvr|0xffffffff|UINT32|0x00000400
   gNxpQoriqLsTokenSpaceGuid.PcdIortTablePtr|0|UINT64|0x00000401
   gNxpQoriqLsTokenSpaceGuid.PcdPciFdtCompatible|""|VOID*|0x00000402
+  gNxpQoriqLsTokenSpaceGuid.PcdPciCfgShiftEnable|FALSE|BOOLEAN|0x000001DB

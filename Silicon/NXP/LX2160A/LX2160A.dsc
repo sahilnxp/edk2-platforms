@@ -30,6 +30,8 @@
   gArmTokenSpaceGuid.PcdGenericWatchdogRefreshBase|0x2390000
   gArmTokenSpaceGuid.PcdGenericWatchdogEl2IntrNum|28
 
+  gEfiMdePkgTokenSpaceGuid.PcdUartDefaultReceiveFifoDepth|0
+
   #
   # ARM L2x0 PCDs
   gArmTokenSpaceGuid.PcdL2x0ControllerBase|0x10900000
@@ -69,7 +71,6 @@
   gNxpQoriqLsTokenSpaceGuid.PcdSataBaseAddr|0x3200000
   gNxpQoriqLsTokenSpaceGuid.PcdSataSize|0x10000
   gNxpQoriqLsTokenSpaceGuid.PcdNumSataController|0x4
-  gNxpQoriqLsTokenSpaceGuid.PcdPciCfgShiftEnable|TRUE
 
   gNxpQoriqLsTokenSpaceGuid.PcdFlexSpiFdtCompatible|"nxp,lx2160a-fspi"
   gNxpQoriqLsTokenSpaceGuid.PcdSpiBusCount|4
@@ -99,4 +100,6 @@
   gNxpQoriqLsTokenSpaceGuid.PcdBypassAmqMask|0x60000
   gNxpQoriqLsTokenSpaceGuid.PcdMacDeviceDisableRegAddr|0x1e00074
 
+[PcdsFeatureFlag]
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cErratumA009203|TRUE
 ##

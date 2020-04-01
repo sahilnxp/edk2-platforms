@@ -35,10 +35,11 @@
 [LibraryClasses]
   ArmSmcLib
   BaseLib
-  BeIoLib
+  IoAccessLib
   DebugLib
   FpgaLib
   IfcLib
+  IoAccessLib
   SerialPortLib
 
 [Sources.common]

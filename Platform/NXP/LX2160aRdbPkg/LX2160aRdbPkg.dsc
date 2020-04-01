@@ -23,6 +23,13 @@
   FLASH_DEFINITION               = Platform/NXP/LX2160aRdbPkg/LX2160aRdbPkg.fdf
   DEFINE MC_HIGH_MEM             = TRUE
 
+  #
+  # Network definition
+  #
+  DEFINE NETWORK_TLS_ENABLE             = FALSE
+  DEFINE NETWORK_HTTP_BOOT_ENABLE       = FALSE
+  DEFINE NETWORK_ISCSI_ENABLE           = FALSE
+
 !include Platform/NXP/NxpQoriqLs.dsc
 !include Silicon/NXP/Chassis/Chassis3V2/Chassis3V2.dsc
 !include Silicon/NXP/LX2160A/LX2160A.dsc
@@ -33,7 +40,6 @@
   PL011UartLib|ArmPlatformPkg/Library/PL011UartLib/PL011UartLib.inf
   PL011UartClockLib|Silicon/NXP/Library/PL011UartClockLib/PL011UartClockLib.inf
   SerialPortLib|ArmPlatformPkg/Library/PL011SerialPortLib/PL011SerialPortLib.inf
-  BeIoLib|Silicon/NXP/Library/BeIoLib/BeIoLib.inf
   SocLib|Silicon/NXP/Chassis/LX2160aSocLib.inf
   RealTimeClockLib|Silicon/NXP/Library/Pcf2129RtcLib/Pcf2129RtcLib.inf
   FpgaLib|Platform/NXP/LX2160aRdbPkg/Library/FpgaLib/FpgaLib.inf
@@ -182,6 +188,11 @@
   MdeModulePkg/Bus/Pci/PciBusDxe/PciBusDxe.inf
 
   Silicon/NXP/Drivers/LanIntelE1000Dxe/LanIntelE1000Dxe.inf
+
+  #
+  # Networking stack
+  #
+!include NetworkPkg/Network.dsc.inc
 
   Silicon/NXP/Drivers/SataInitDxe/SataInitDxe.inf
   Silicon/NXP/Drivers/MmcHostDxe/MmcHostDxe.inf

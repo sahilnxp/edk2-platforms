@@ -35,15 +35,15 @@
 [LibraryClasses]
   ArmSmcLib
   BaseLib
-  BeIoLib
+  IoAccessLib
   DebugLib
   FpgaLib
+  I2cLib
   SerialPortLib
 
 [Sources.common]
   Chassis.c
   Chassis3V2/Soc.c
-  ErrataCh3Vx.c
   SerDes.c
   SocHelper.S
 
