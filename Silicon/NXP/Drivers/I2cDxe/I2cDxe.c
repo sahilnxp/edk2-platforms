@@ -194,7 +194,7 @@ I2cDxeEntryPoint (
   EFI_STATUS                Status;
 
 
-  mI2cRegs = ( EFI_PHYSICAL_ADDRESS)(FixedPcdGet64 (PcdI2c0BaseAddr) +
+  mI2cRegs = ( EFI_PHYSICAL_ADDRESS)(FixedPcdGet64 (PcdI2c5BaseAddr) +
                          (PcdGet32 (PcdI2cBus) * FixedPcdGet32 (PcdI2cSize)));
   //
   // Install I2c Master protocol on this controller

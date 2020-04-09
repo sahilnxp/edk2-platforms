@@ -1,0 +1,70 @@
+#  @file
+#
+#  EEPROM Driver Implementation
+#  Also installs a FVB Protocol.
+#
+#  Copyright 2020 NXP
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution. The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+#
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = EepromDxe
+  FILE_GUID                      = 63d26b41-38ba-482a-ac6d-3a2fb494afd4
+  MODULE_TYPE                    = MM_STANDALONE | DXE_RUNTIME_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = EepromInitialize
+
+[Sources]
+  EepromDxe.c
+  EepromFvb.c
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  ArmPlatformPkg/ArmPlatformPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MdePkg/MdePkg.dec
+  Silicon/NXP/NxpQoriqLs.dec
+  StandaloneMmPkg/StandaloneMmPkg.dec
+
+[LibraryClasses]
+  ArmLib
+  BaseMemoryLib
+  DxeServicesTableLib
+  IoLib
+  MemoryAllocationLib
+  PcdLib
+  TimerLib
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  UefiLib
+  UefiRuntimeLib
+  StandaloneMmDriverEntryPoint
+
+[Guids]
+  gEfiAuthenticatedVariableGuid
+  gEfiSystemNvDataFvGuid
+  gEfiVariableGuid
+
+[FixedPcd]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
+
+[Protocols]
+  gEfiSmmFirmwareVolumeBlockProtocolGuid          ## PRODUCES
+
+
+[Depex.common.DXE_RUNTIME_DRIVER]
+  gEfiCpuArchProtocolGuid
