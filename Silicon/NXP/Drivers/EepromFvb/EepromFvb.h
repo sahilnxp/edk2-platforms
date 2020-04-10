@@ -16,7 +16,7 @@ struct _MEM_INSTANCE
     BOOLEAN                             Initialized;
 
     EFI_PHYSICAL_ADDRESS                MemBaseAddress;
-    UINT16                              BlockSize;
+    UINT32                              BlockSize;
     UINT16                              NBlocks;
     EFI_LBA                             StartLba;
 
@@ -28,7 +28,7 @@ typedef struct _MEM_INSTANCE            MEM_INSTANCE;
 #define NBLOCKS                    (3 * 1) // EFI Vars, FTW working, FTW spare
 #define BLOCK_SIZE                 SIZE_64KB
 
-#define FLASH_SIGNATURE            SIGNATURE_32('e', 'e', 'p', 'r', 'o', 'm')
+#define FLASH_SIGNATURE            SIGNATURE_32('e', 'p', 'r', 'm')
 #define INSTANCE_FROM_FVB_THIS(a)  CR(a, MEM_INSTANCE, FvbProtocol, \
 					FLASH_SIGNATURE)
 
@@ -50,8 +50,7 @@ Eeprom_Write (IN  UINT32  SlaveAddress, IN  UINT64  RegAddress,
 
 EFI_STATUS
 Eeprom_Read (IN  UINT32  SlaveAddress, IN  UINT64  RegAddress,
-  IN  UINT8   RegAddressWidthInBytes, IN  UINT8   *RegValue,
+  IN  UINT8   RegAddressWidthInBytes, IN OUT  UINT8   *RegValue,
   IN  UINT32  RegValueNumBytes);
-
 
 #endif

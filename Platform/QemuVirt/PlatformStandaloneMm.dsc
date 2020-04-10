@@ -70,6 +70,10 @@
   #
   NULL|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
 
+  FpgaLib|Platform/NXP/LX2160aRdbPkg/Library/FpgaLib/FpgaLib.inf
+  SocClockLib|Silicon/NXP/LX2160A/Library/SocClockLib/SocClockLib.inf
+  I2cLib|Silicon/NXP/Library/I2cLib/I2cLib.inf
+
 [LibraryClasses.common.MM_STANDALONE]
   HobLib|StandaloneMmPkg/Library/StandaloneMmHobLib/StandaloneMmHobLib.inf
   MmServicesTableLib|MdePkg/Library/StandaloneMmServicesTableLib/StandaloneMmServicesTableLib.inf
@@ -102,12 +106,20 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxVariableSize|0x2000
   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxAuthVariableSize|0x2800
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase|0x040346000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize|0x00004000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase|0x04034A000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize|0x00004000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase|0x04034E000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize|0x00004000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize|0x00004000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize|0x00010000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase|0x40356000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize|0x00010000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase|0x40366000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize|0x00010000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize|0x00010000
+
+
+  gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr|0x02040000
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cSize|0x10000
+  gNxpQoriqLsTokenSpaceGuid.PcdNumI2cController|8
+
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cBus|4
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cSpeed|100000
 
 ###################################################################################################
 #
@@ -133,7 +145,7 @@
   #
   StandaloneMmPkg/Core/StandaloneMmCore.inf
   StandaloneMmPkg/Drivers/StandaloneMmCpu/AArch64/StandaloneMmCpu.inf
-  Silicon/QemuVirt/Drivers/OpTeeRpmbFv/OpTeeRpmbFv.inf
+  Silicon/NXP/Drivers/EepromFvb/EepromFvb.inf
   MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteStandaloneMm.inf
   MdeModulePkg/Universal/Variable/RuntimeDxe/VariableStandaloneMm.inf {
     <LibraryClasses>

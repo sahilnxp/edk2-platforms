@@ -16,7 +16,7 @@
 
 #include <Guid/SystemNvDataGuid.h>
 #include <Guid/VariableFormat.h>
-#include <Guid/NvVarStoreFormatted.h>
+#include <Library/BaseLib.h>
 
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
@@ -26,7 +26,18 @@
 #include <Library/PcdLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeLib.h>
+#include <Library/SocClockLib.h>
+#include <Library/I2cLib.h>
+#include <Library/MmServicesTableLib.h>
+
+#include <Protocol/FirmwareVolumeBlock.h>
+#include <Protocol/SmmFirmwareVolumeBlock.h>
+
 #include "EepromFvb.h"
+
+STATIC EFI_FIRMWARE_VOLUME_BLOCK_PROTOCOL    eepromFvb;
+UINTN        I2cBase = 0;
+STATIC UINTN     mFlashNvStorageVariableBase;
 
 STATIC MEM_INSTANCE  mInstance;
 
@@ -44,101 +55,10 @@ static void hexdump(const char *label, const char *cp, int len)
 
 }
 
-STATIC EFI_EVENT mFvbVirtualAddrChangeEvent;
+//STATIC EFI_EVENT mFvbVirtualAddrChangeEvent;
 
 /* FIXME: Since EEPROM is not memory-mapped we will keep this as 0 */
 STATIC UINTN mFlashNvStorageBase = 0;
-///
-/// The Firmware Volume Block Protocol is the low-level interface
-/// to a firmware volume. File-level access to a firmware volume
-/// should not be done using the Firmware Volume Block Protocol.
-/// Normal access to a firmware volume must use the Firmware
-/// Volume Protocol. Typically, only the file system driver that
-/// produces the Firmware Volume Protocol will bind to the
-/// Firmware Volume Block Protocol.
-///
-
-/**
-  Initialises the FV Header and Variable Store Header
-  to support variable operations.
-
-  @param[in]  Context - SPI_NOR_FLASH_CONTEXT pointer
-  @param[in]  StartLba - Location to initialise the headers
-
-**/
-EFI_STATUS
-InitializeFvAndVariableStoreHeaders (
-  IN SPI_NOR_FLASH_CONTEXT *Context,
-  IN EFI_LBA               StartLba
-  )
-{
-  EFI_STATUS                          Status;
-  VOID*                               Headers;
-  UINTN                               HeadersLength;
-  EFI_FIRMWARE_VOLUME_HEADER          *FirmwareVolumeHeader;
-  VARIABLE_STORE_HEADER               *VariableStoreHeader;
-  SPI_NOR_PARAMS                      *SpiNorParams;
-  SFDP_FLASH_PARAM                    *ParamTable;
-
-  SpiNorParams = Context->SpiNorParams;
-  ParamTable = SpiNorParams->ParamTable;
-
-  HeadersLength = sizeof(EFI_FIRMWARE_VOLUME_HEADER) + sizeof(EFI_FV_BLOCK_MAP_ENTRY) + sizeof(VARIABLE_STORE_HEADER);
-  Headers = AllocateZeroPool(HeadersLength);
-
-  // FirmwareVolumeHeader->FvLength is declared to have the Variable area AND the FTW working area AND the FTW Spare contiguous.
-  ASSERT(PcdGet64 (PcdFlashNvStorageVariableBase64) + PcdGet32(PcdFlashNvStorageVariableSize) == PcdGet64 (PcdFlashNvStorageFtwWorkingBase64));
-  ASSERT(PcdGet64 (PcdFlashNvStorageFtwWorkingBase64) + PcdGet32(PcdFlashNvStorageFtwWorkingSize) == PcdGet64 (PcdFlashNvStorageFtwSpareBase64));
-
-  // Check if the size of the area is at least one block size
-  ASSERT((PcdGet32(PcdFlashNvStorageVariableSize) > 0) && (PcdGet32(PcdFlashNvStorageVariableSize) / SFDP_PARAM_ERASE_SIZE (ParamTable) > 0));
-  ASSERT((PcdGet32(PcdFlashNvStorageFtwWorkingSize) > 0) && (PcdGet32(PcdFlashNvStorageFtwWorkingSize) / SFDP_PARAM_ERASE_SIZE (ParamTable) > 0));
-  ASSERT((PcdGet32(PcdFlashNvStorageFtwSpareSize) > 0) && (PcdGet32(PcdFlashNvStorageFtwSpareSize) / SFDP_PARAM_ERASE_SIZE (ParamTable) > 0));
-
-  // Ensure the Variable area Base Addresses are aligned on a block size boundaries
-  ASSERT(PcdGet64 (PcdFlashNvStorageVariableBase64) % SFDP_PARAM_ERASE_SIZE (ParamTable) == 0);
-  ASSERT(PcdGet64 (PcdFlashNvStorageFtwWorkingBase64) % SFDP_PARAM_ERASE_SIZE (ParamTable) == 0);
-  ASSERT(PcdGet64 (PcdFlashNvStorageFtwSpareBase64) % SFDP_PARAM_ERASE_SIZE (ParamTable) == 0);
-
-  //
-  // EFI_FIRMWARE_VOLUME_HEADER
-  //
-  FirmwareVolumeHeader = (EFI_FIRMWARE_VOLUME_HEADER*)Headers;
-  CopyGuid (&FirmwareVolumeHeader->FileSystemGuid, &gEfiSystemNvDataFvGuid);
-  FirmwareVolumeHeader->FvLength = SFDP_PARAM_FLASH_SIZE(ParamTable);
-  FirmwareVolumeHeader->Signature = EFI_FVH_SIGNATURE;
-  FirmwareVolumeHeader->Attributes = (EFI_FVB_ATTRIBUTES_2) (
-                                          EFI_FVB2_READ_ENABLED_CAP   | // Reads may be enabled
-                                          EFI_FVB2_READ_STATUS        | // Reads are currently enabled
-                                          EFI_FVB2_STICKY_WRITE       | // A block erase is required to flip bits into EFI_FVB2_ERASE_POLARITY
-                                          EFI_FVB2_MEMORY_MAPPED      | // It is memory mapped
-                                          EFI_FVB2_ERASE_POLARITY     | // After erasure all bits take this value (i.e. '1')
-                                          EFI_FVB2_WRITE_STATUS       | // Writes are currently enabled
-                                          EFI_FVB2_WRITE_ENABLED_CAP    // Writes may be enabled
-                                      );
-  FirmwareVolumeHeader->HeaderLength = sizeof(EFI_FIRMWARE_VOLUME_HEADER) + sizeof(EFI_FV_BLOCK_MAP_ENTRY);
-  FirmwareVolumeHeader->Revision = EFI_FVH_REVISION;
-  FirmwareVolumeHeader->BlockMap[0].NumBlocks = Context->LastLba + 1;
-  FirmwareVolumeHeader->BlockMap[0].Length      = SFDP_PARAM_ERASE_SIZE (ParamTable);
-  FirmwareVolumeHeader->BlockMap[1].NumBlocks = 0;
-  FirmwareVolumeHeader->BlockMap[1].Length      = 0;
-  FirmwareVolumeHeader->Checksum = CalculateCheckSum16 ((UINT16*)FirmwareVolumeHeader,FirmwareVolumeHeader->HeaderLength);
-
-  //
-  // VARIABLE_STORE_HEADER
-  //
-  VariableStoreHeader = (VARIABLE_STORE_HEADER*)((UINTN)Headers + FirmwareVolumeHeader->HeaderLength);
-  CopyGuid (&VariableStoreHeader->Signature, &gEfiVariableGuid);
-  VariableStoreHeader->Size = PcdGet32(PcdFlashNvStorageVariableSize) - FirmwareVolumeHeader->HeaderLength;
-  VariableStoreHeader->Format            = VARIABLE_STORE_FORMATTED;
-  VariableStoreHeader->State             = VARIABLE_STORE_HEALTHY;
-
-  // Install the combined super-header in the SpiNorFlash
-  Status = FvbWrite (&Context->FvbProtocol, StartLba, 0, &HeadersLength, Headers);
-
-  FreePool (Headers);
-  return Status;
-}
 
 /**
  The GetAttributes() function retrieves the attributes and
@@ -242,6 +162,154 @@ FvbGetPhysicalAddress (
   return EFI_SUCCESS;
 }
 
+/**
+  Write data to I2C EEPROM.
+
+  @param[in]  Base                   Base Address of I2c controller's registers
+  @param[in]  SlaveAddress           Logical Address of EEPROM block.
+  @param[in]  RegAddress             Register Address in Slave's memory map
+  @param[in]  RegAddressWidthInBytes Number of bytes in RegAddress to send to
+                                     I2c Slave for simple reads without any
+                                     register, make this value = 0
+                                     (RegAddress is don't care in that case)
+  @param[out] RegValue               Value to be read from I2c slave's regiser
+  @param[in]  RegValueNumBytes       Number of bytes to read from I2c slave
+                                     register
+
+  @return  EFI_SUCCESS       successfuly read the registers
+  @return  EFI_DEVICE_ERROR  There was an error while transferring data through
+                             I2c bus
+  @return  EFI_NO_RESPONSE   There was no Ack from i2c device
+  @return  EFI_TIMEOUT       I2c Bus is busy
+  @return  EFI_NOT_READY     I2c Bus Arbitration lost
+**/
+EFI_STATUS
+EFIAPI
+Eeprom_Write (
+  IN  UINT32  SlaveAddress,
+  IN  UINT64  RegAddress,
+  IN  UINT8   RegAddressWidthInBytes,
+  IN  UINT8   *RegValue,
+  IN  UINT32  RegValueNumBytes
+  )
+{
+  EFI_I2C_OPERATION       *Operations;
+  EFI_I2C_REQUEST_PACKET         RequestPacket;
+  UINTN                   OperationCount;
+  UINT8                   Address[sizeof (RegAddress)];
+  UINT8                   *PtrAddress;
+  EFI_STATUS              Status;
+
+  Status = EFI_SUCCESS;
+
+  ZeroMem (&RequestPacket, sizeof (RequestPacket));
+  OperationCount = 0;
+  Operations = RequestPacket.Operation;
+  PtrAddress = Address;
+
+  if (RegAddressWidthInBytes > ARRAY_SIZE (Address)) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (RegAddressWidthInBytes != 0) {
+    Operations[OperationCount].LengthInBytes = RegAddressWidthInBytes;
+    Operations[OperationCount].Buffer = PtrAddress;
+    while (RegAddressWidthInBytes--) {
+      *PtrAddress++ = RegAddress >> (8 * RegAddressWidthInBytes);
+    }
+    OperationCount++;
+  }
+
+  Operations[OperationCount].LengthInBytes = RegValueNumBytes;
+  Operations[OperationCount].Buffer = RegValue;
+  Operations[OperationCount].Flags = 0;
+  OperationCount++;
+
+  RequestPacket.OperationCount = OperationCount;
+
+  Status = I2cBusXfer(I2cBase, SlaveAddress, &RequestPacket);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "I2cBusXfer Failed while Writing data\n"));
+    return Status;
+  }
+
+  return Status;
+}
+
+
+/**
+  Read data from I2C EEPROM.
+
+  @param[in]  Base                   Base Address of I2c controller's registers
+  @param[in]  SlaveAddress           Logical Address of EEPROM block.
+  @param[in]  RegAddress             Register Address in Slave's memory map
+  @param[in]  RegAddressWidthInBytes Number of bytes in RegAddress to send to
+                                     I2c Slave for simple reads without any
+                                     register, make this value = 0
+                                     (RegAddress is don't care in that case)
+  @param[out] RegValue               Value to be read from I2c slave's regiser
+  @param[in]  RegValueNumBytes       Number of bytes to read from I2c slave
+                                     register
+
+  @return  EFI_SUCCESS       successfuly read the registers
+  @return  EFI_DEVICE_ERROR  There was an error while transferring data through
+                             I2c bus
+  @return  EFI_NO_RESPONSE   There was no Ack from i2c device
+  @return  EFI_TIMEOUT       I2c Bus is busy
+  @return  EFI_NOT_READY     I2c Bus Arbitration lost
+**/
+EFI_STATUS
+EFIAPI
+Eeprom_Read (
+  IN  UINT32  SlaveAddress,
+  IN  UINT64  RegAddress,
+  IN  UINT8   RegAddressWidthInBytes,
+  IN OUT UINT8   *RegValue,
+  IN  UINT32  RegValueNumBytes
+  )
+{
+  EFI_I2C_OPERATION       *Operations;
+  EFI_I2C_REQUEST_PACKET         RequestPacket;
+  UINTN                   OperationCount;
+  UINT8                   Address[sizeof (RegAddress)];
+  UINT8                   *PtrAddress;
+  EFI_STATUS              Status;
+
+  Status = EFI_SUCCESS;
+
+  ZeroMem (&RequestPacket, sizeof (RequestPacket));
+  OperationCount = 0;
+  Operations = RequestPacket.Operation;
+  PtrAddress = Address;
+
+  if (RegAddressWidthInBytes > ARRAY_SIZE (Address)) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (RegAddressWidthInBytes != 0) {
+    Operations[OperationCount].LengthInBytes = RegAddressWidthInBytes;
+    Operations[OperationCount].Buffer = PtrAddress;
+    while (RegAddressWidthInBytes--) {
+      *PtrAddress++ = RegAddress >> (8 * RegAddressWidthInBytes);
+    }
+    OperationCount++;
+  }
+
+  Operations[OperationCount].LengthInBytes = RegValueNumBytes;
+  Operations[OperationCount].Buffer = RegValue;
+  Operations[OperationCount].Flags = I2C_FLAG_READ;
+  OperationCount++;
+
+  RequestPacket.OperationCount = OperationCount;
+
+  Status = I2cBusXfer(I2cBase, SlaveAddress, &RequestPacket);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "I2cBusXfer Failed while reading data\n"));
+    return Status;
+  }
+
+  return Status;
+}
 
 /**
  Reads the specified number of bytes into a buffer from the specified block.
@@ -722,18 +790,18 @@ PreRead (
   Size = FixedPcdGet32(PcdFlashNvStorageVariableSize); // FIXME add size for all
 
   Status = Eeprom_Read(EEPROM_VARIABLE_STORE_ADDR, StartOffset,
-  				EEPROM_ADDR_WIDTH_3BYTES, NewAddr, Size);
-  if (EFI_ERROR())
+  				EEPROM_ADDR_WIDTH_3BYTES, (UINT8 *)NewAddr, Size);
+  if (EFI_ERROR(Status))
   	DEBUG ((DEBUG_ERROR, "Eeprom_Read failed for Variables\n"));
 
   Status = Eeprom_Read(EEPROM_FTW_WORKING_SPACE_ADDR, StartOffset,
-  				EEPROM_ADDR_WIDTH_3BYTES, NewAddr + Size, Size);
-    if (EFI_ERROR())
+  				EEPROM_ADDR_WIDTH_3BYTES, (UINT8 *)(NewAddr + Size), Size);
+    if (EFI_ERROR(Status))
   	DEBUG ((DEBUG_ERROR, "Eeprom_Read failed for FTW Working Space\n"));
 
   Status = Eeprom_Read(EEPROM_FTW_SPARE_SPACE_ADDR, StartOffset,
-  				EEPROM_ADDR_WIDTH_3BYTES, NewAddr + 2 * Size, Size);
-    if (EFI_ERROR())
+  				EEPROM_ADDR_WIDTH_3BYTES, (UINT8 *)(NewAddr + (2 * Size)), Size);
+    if (EFI_ERROR(Status))
   	DEBUG ((DEBUG_ERROR, "Eeprom_Read failed for FTW Spare Space\n"));
 
 }
@@ -824,7 +892,6 @@ FvbEraseBlocks (
 
   return EFI_SUCCESS;
 }
-#endif
 
 /**
   Fixup internal data so that EFI can be call in virtual mode.
@@ -843,6 +910,7 @@ FvbVirtualNotifyEvent (
   EfiConvertPointer (0x0, (VOID**)&mFlashNvStorageBase);
   return;
 }
+#endif
 
 STATIC
 EFI_STATUS
@@ -851,8 +919,6 @@ ValidateFvHeader (
   IN EFI_FIRMWARE_VOLUME_HEADER            *FwVolHeader
   )
 {
-  UINT16  *Ptr;
-  UINT16  HeaderLength;
   UINT16  Checksum;
   UINTN                       VariableStoreLength;
   VARIABLE_STORE_HEADER       *VariableStoreHeader;
@@ -871,6 +937,7 @@ ValidateFvHeader (
       __FUNCTION__));
     return EFI_NOT_FOUND;
   }
+
   // Check the Firmware Volume Guid
   if ( CompareGuid (&FwVolHeader->FileSystemGuid, &gEfiSystemNvDataFvGuid) == FALSE ) {
     DEBUG ((DEBUG_ERROR, "%a: Firmware Volume Guid non-compatible\n",
@@ -878,7 +945,7 @@ ValidateFvHeader (
     return EFI_NOT_FOUND;
   }
 
-    // Verify the header checksum
+   // Verify the header checksum
   Checksum = CalculateSum16((UINT16*)FwVolHeader, FwVolHeader->HeaderLength);
   if (Checksum != 0) {
     DEBUG ((DEBUG_ERROR, "%a: FV checksum is invalid (Checksum:0x%X)\n",
@@ -982,7 +1049,10 @@ InitializeFvAndVariableStoreHeaders (
   // Install the combined super-header in memory
   CopyMem (CP, Headers, HeadersLength);
 
-  FvbWrite();
+  Status = FvbWrite(&eepromFvb, 0x1, 0x0, &HeadersLength, Headers);
+  if (EFI_ERROR(Status)) {
+    DEBUG((DEBUG_ERROR, "FvbWrite failed\n"));
+  }
 //  SendSvc(SP_SVC_RPMB_WRITE, "EFI_VARS", (UINTN) Addr, HeadersLength, 0);
 
   FreePool (Headers);
@@ -1006,7 +1076,6 @@ VOID DbgMem (
   hexdump("", (char*)NewAddr+2*Size, 0x80);
 }
 
-STATIC
 EFI_STATUS
 EFIAPI
 FvbInitialize (
@@ -1084,12 +1153,10 @@ FvbInitialize (
 }
 
 EFI_STATUS
-EFIAPI
 EepromFvbInitialize (
-  IN EFI_FIRMWARE_VOLUME_BLOCK2_PROTOCOL *Fvb,
+  IN EFI_FIRMWARE_VOLUME_BLOCK2_PROTOCOL *Fvb
   )
 {
-  //VOID          *Addr2;
   EFI_PHYSICAL_ADDRESS Addr = FixedPcdGet32 (PcdFlashNvStorageVariableBase);
 
   EFI_STATUS           Status;
@@ -1126,6 +1193,7 @@ EepromFvbInitialize (
                     );
   ASSERT_EFI_ERROR (Status);
 
+#if 0
   //
   // Register for the virtual address change event
   //
@@ -1138,10 +1206,52 @@ EepromFvbInitialize (
                   &mFvbVirtualAddrChangeEvent
                   );
   ASSERT_EFI_ERROR (Status);
-
+#endif
 
   DEBUG ((EFI_D_INFO, "%a: Using NV store FV in-memory copy at 0x%lx\n",
     __FUNCTION__, Addr));
 
   return Status;
 }
+
+EFI_STATUS
+EFIAPI
+EepromInitialize (
+  IN EFI_HANDLE           ImageHandle,
+  IN EFI_MM_SYSTEM_TABLE  *SystemTable
+  )
+{
+  EFI_STATUS                    Status;
+  EFI_HANDLE                    Handle;
+  
+  UINT64       I2cClock;
+
+  Status = EFI_SUCCESS;
+  I2cBase = (EFI_PHYSICAL_ADDRESS)(FixedPcdGet64 (PcdI2c5BaseAddr) +
+                         (PcdGet32 (PcdI2cBus) * FixedPcdGet32 (PcdI2cSize)));
+
+  I2cClock = SocGetClock (IP_I2C, 0);
+
+  Status = I2cInitialize(I2cBase, I2cClock, PcdGet32(PcdI2cSpeed));
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  Status = EepromFvbInitialize(&eepromFvb);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: EepromFVBInitialize() failed - %r\n",
+      __FUNCTION__, Status));
+    return Status;
+  }
+ 
+  Status = gMmst->MmInstallProtocolInterface (
+                    &Handle,
+                    &gEfiSmmFirmwareVolumeBlockProtocolGuid,
+                    EFI_NATIVE_INTERFACE,
+                    &eepromFvb
+                    );
+  ASSERT_EFI_ERROR (Status);
+
+  return Status;
+}
+

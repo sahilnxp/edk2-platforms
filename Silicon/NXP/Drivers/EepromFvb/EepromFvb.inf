@@ -1,7 +1,6 @@
 #  @file
 #
-#  EEPROM Driver Implementation
-#  Also installs a FVB Protocol.
+#  EEPROM FVB Driver Implementation
 #
 #  Copyright 2020 NXP
 #
@@ -19,12 +18,12 @@
   INF_VERSION                    = 0x0001001A
   BASE_NAME                      = EepromDxe
   FILE_GUID                      = 63d26b41-38ba-482a-ac6d-3a2fb494afd4
-  MODULE_TYPE                    = MM_STANDALONE | DXE_RUNTIME_DRIVER
+  MODULE_TYPE                    = MM_STANDALONE
   VERSION_STRING                 = 1.0
+  PI_SPECIFICATION_VERSION       = 0x00010032
   ENTRY_POINT                    = EepromInitialize
 
 [Sources]
-  EepromDxe.c
   EepromFvb.c
 
 [Packages]
@@ -38,15 +37,9 @@
 [LibraryClasses]
   ArmLib
   BaseMemoryLib
-  DxeServicesTableLib
-  IoLib
+  SocClockLib
+  I2cLib
   MemoryAllocationLib
-  PcdLib
-  TimerLib
-  UefiDriverEntryPoint
-  UefiBootServicesTableLib
-  UefiLib
-  UefiRuntimeLib
   StandaloneMmDriverEntryPoint
 
 [Guids]
@@ -62,9 +55,16 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
 
+  gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cSize
+  gNxpQoriqLsTokenSpaceGuid.PcdNumI2cController
+
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cBus
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cSpeed
+
 [Protocols]
   gEfiSmmFirmwareVolumeBlockProtocolGuid          ## PRODUCES
 
 
-[Depex.common.DXE_RUNTIME_DRIVER]
-  gEfiCpuArchProtocolGuid
+[Depex]
+  TRUE
