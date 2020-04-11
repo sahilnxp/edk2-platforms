@@ -114,12 +114,14 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize|0x00010000
 
 
+  gNxpQoriqLsTokenSpaceGuid.PcdI2c0BaseAddr|0x02000000
   gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr|0x02040000
   gNxpQoriqLsTokenSpaceGuid.PcdI2cSize|0x10000
   gNxpQoriqLsTokenSpaceGuid.PcdNumI2cController|8
 
   gNxpQoriqLsTokenSpaceGuid.PcdI2cBus|4
   gNxpQoriqLsTokenSpaceGuid.PcdI2cSpeed|100000
+  gNxpQoriqLsTokenSpaceGuid.PcdGutsBaseAddr|0x1E00000
 
 ###################################################################################################
 #

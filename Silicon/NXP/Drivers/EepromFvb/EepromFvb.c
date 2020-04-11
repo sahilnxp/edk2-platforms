@@ -1230,13 +1230,20 @@ EepromInitialize (
   I2cBase = (EFI_PHYSICAL_ADDRESS)(FixedPcdGet64 (PcdI2c5BaseAddr) +
                          (PcdGet32 (PcdI2cBus) * FixedPcdGet32 (PcdI2cSize)));
 
+  DEBUG ((DEBUG_ERROR, "%a I2cBase = %lx I2c5 Addr = %lx\n", __FUNCTION__,
+    I2cBase, FixedPcdGet64 (PcdI2c5BaseAddr)));
   I2cClock = SocGetClock (IP_I2C, 0);
+  if (I2cClock == 0) {
+    DEBUG ((DEBUG_ERROR, "SocGetClock returned 0\n"));
+  }
 
-  Status = I2cInitialize(I2cBase, I2cClock, PcdGet32(PcdI2cSpeed));
+  DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
+  Status = I2cInitialize(FixedPcdGet64 (PcdI2c5BaseAddr), I2cClock, PcdGet32(PcdI2cSpeed));
   if (EFI_ERROR (Status)) {
     return Status;
   }
 
+  DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
   Status = EepromFvbInitialize(&eepromFvb);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a: EepromFVBInitialize() failed - %r\n",
@@ -1244,6 +1251,7 @@ EepromInitialize (
     return Status;
   }
  
+  DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
   Status = gMmst->MmInstallProtocolInterface (
                     &Handle,
                     &gEfiSmmFirmwareVolumeBlockProtocolGuid,

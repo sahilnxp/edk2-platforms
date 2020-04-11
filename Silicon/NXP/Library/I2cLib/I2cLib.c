@@ -11,6 +11,7 @@
 #include <Library/I2cLib.h>
 #include <Library/IoLib.h>
 #include <Library/TimerLib.h>
+#include <Library/DebugLib.h>
 
 #include "I2cLibInternal.h"
 
@@ -565,6 +566,7 @@ I2cBusReadReg (
   OperationCount++;
 
   RequestPacket.OperationCount = OperationCount;
+  DEBUG ((DEBUG_ERROR, "Reached %a %u\n", __FUNCTION__, __LINE__));
 
   Status = I2cBusXfer (
              Base, SlaveAddress,
