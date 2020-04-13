@@ -17,9 +17,9 @@
 [Defines]
   INF_VERSION                    = 0x0001001A
   BASE_NAME                      = EepromFvb
-  FILE_GUID                      = 63d26b41-38ba-482a-ac6d-3a2fb494afd4
+  FILE_GUID                      = 7243dff1-0cb8-4b48-9285-724077ba680a
   MODULE_TYPE                    = MM_STANDALONE
-  VERSION_STRING                 = 1.0
+  VERSION_STRING                 = 0.1
   PI_SPECIFICATION_VERSION       = 0x00010032
   ENTRY_POINT                    = EepromInitialize
 

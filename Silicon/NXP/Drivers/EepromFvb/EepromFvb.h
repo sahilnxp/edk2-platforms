@@ -25,8 +25,8 @@ struct _MEM_INSTANCE
 
 typedef struct _MEM_INSTANCE            MEM_INSTANCE;
 
-#define NBLOCKS                    (3 * 1) // EFI Vars, FTW working, FTW spare
-#define BLOCK_SIZE                 SIZE_64KB
+#define NBLOCKS                    (3 * 4) // EFI Vars, FTW working, FTW spare
+#define BLOCK_SIZE                 SIZE_4KB
 
 #define FLASH_SIGNATURE            SIGNATURE_32('e', 'p', 'r', 'm')
 #define INSTANCE_FROM_FVB_THIS(a)  CR(a, MEM_INSTANCE, FvbProtocol, \
