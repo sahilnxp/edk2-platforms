@@ -318,6 +318,7 @@ I2cRead (
     MmioAnd8 ((UINTN)&Regs->Ibcr, ~I2C_IBCR_NOACK);
   }
 DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
+
   // Perform a dummy read to initiate the receive operation.
   MmioRead8 ((UINTN)&Regs->Ibdr);
 
@@ -353,20 +354,25 @@ EFI_STATUS
 I2cWrite (
   IN  I2C_REGS           *Regs,
   IN  UINT32             SlaveAddress,
-  IN  EFI_I2C_OPERATION  *Operation
+  IN  EFI_I2C_OPERATION  *Operation,
+  IN  BOOLEAN            IsLastOperation
 )
 {
   EFI_STATUS Status;
   UINTN      Index;
 
-  // Write Slave Address
-  MmioWrite8 ((UINTN)&Regs->Ibdr, (SlaveAddress << BIT0) & (UINT8)(~BIT0));
-  Status = I2cTransferComplete (Regs, I2C_BUS_TEST_RX_ACK);
-  if (EFI_ERROR (Status)) {
-    return Status;
+  if (!IsLastOperation) {
+    DEBUG ((DEBUG_ERROR, "Writing Slave Address\n"));
+    // Write Slave Address
+    MmioWrite8 ((UINTN)&Regs->Ibdr, (SlaveAddress << BIT0) & (UINT8)(~BIT0));
+    Status = I2cTransferComplete (Regs, I2C_BUS_TEST_RX_ACK);
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
   }
 
   // Write Data
+  DEBUG ((DEBUG_ERROR, "Writing Data\n"));
   for (Index = 0; Index < Operation->LengthInBytes; Index++) {
     MmioWrite8 ((UINTN)&Regs->Ibdr, Operation->Buffer[Index]);
     Status = I2cTransferComplete (Regs, I2C_BUS_TEST_RX_ACK);
@@ -463,11 +469,13 @@ I2cBusXfer (
 DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
   Status = I2cBusTestBusBusy (Regs, I2C_BUS_TEST_IDLE);
   if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
     goto ErrorExit;
   }
 
   Status = I2cStart (Regs);
   if (EFI_ERROR (Status)) {
+  	DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
     goto ErrorExit;
   }
 DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
@@ -475,21 +483,26 @@ DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
        Index < RequestPacket->OperationCount;
        Index++, Operation++) {
     if (Index == (RequestPacket->OperationCount - 1)) {
+      DEBUG ((DEBUG_ERROR, "Last Operation\n"));
       IsLastOperation = TRUE;
     }
     // Send repeat start after first transmit/recieve
-    if (Index) {
+    if (Index && (Operation->Flags & I2C_FLAG_READ)) {
+      DEBUG ((DEBUG_ERROR, "Start Repeat Started\n"));
       MmioOr8 ((UINTN)&Regs->Ibcr, I2C_IBCR_RSTA);
       Status = I2cBusTestBusBusy (Regs, I2C_BUS_TEST_BUSY);
       if (EFI_ERROR (Status)) {
+	 DEBUG ((DEBUG_ERROR, "Start Repeat failed\n"));
         goto ErrorExit;
       }
+      DEBUG ((DEBUG_ERROR, "Start Repeat done\n"));
     }
+
     // Read/write data
     if (Operation->Flags & I2C_FLAG_READ) {
       Status = I2cRead (Regs, SlaveAddress, Operation, IsLastOperation);
     } else {
-      Status = I2cWrite (Regs, SlaveAddress, Operation);
+      Status = I2cWrite (Regs, SlaveAddress, Operation, IsLastOperation);
     }
     if (EFI_ERROR (Status)) {
       goto ErrorExit;

@@ -998,6 +998,41 @@ ValidateFvHeader (
       __FUNCTION__));
     return EFI_NOT_FOUND;
   }
+#if 0
+  DEBUG ((DEBUG_ERROR, "Checking Revision\n"));
+  if (FwVolHeader->Revision != EFI_FVH_REVISION) {
+  	DEBUG ((DEBUG_ERROR, "%a: Revision failed t\n",
+      __FUNCTION__));
+    return EFI_NOT_FOUND;
+  }
+
+  DEBUG ((DEBUG_ERROR, "Checking Signature\n"));
+  if (FwVolHeader->Signature != EFI_FVH_SIGNATURE) {
+  	DEBUG ((DEBUG_ERROR, "%a: Signature failed\n",
+      __FUNCTION__));
+    return EFI_NOT_FOUND;
+  }
+
+  DEBUG ((DEBUG_ERROR, "Checking FvLength\n"));
+  if (FwVolHeader->FvLength == ((UINT64) -1)) {
+  	DEBUG ((DEBUG_ERROR, "%a: FvLength failed\n",
+      __FUNCTION__));
+    return EFI_NOT_FOUND;
+  }
+
+  DEBUG ((DEBUG_ERROR, "Checking HeaderLength\n"));
+  if ((FwVolHeader->HeaderLength & 0x01) != 0) {
+  	DEBUG ((DEBUG_ERROR, "%a: HeaderLength failed\n",
+      __FUNCTION__));
+    return EFI_NOT_FOUND;
+  }
+    DEBUG ((DEBUG_ERROR, "%a , %u, Check the Firmware Volume Guid\n", __FUNCTION__, __LINE__));
+	  DEBUG ((DEBUG_ERROR, "%a , %u, Verify the header checksum\n", __FUNCTION__, __LINE__));
+	    DEBUG ((DEBUG_ERROR, "%a , %u, Check the Variable Store Guid\n", __FUNCTION__, __LINE__));
+		 DEBUG ((DEBUG_ERROR, "%a , %u, Check the Variable Store Length\n", __FUNCTION__, __LINE__));
+  DEBUG ((DEBUG_ERROR, "%a , %u, FwVolHeader = %p\n", __FUNCTION__, __LINE__,
+  			FwVolHeader));
+#endif
 
   // Check the Firmware Volume Guid
   if ( CompareGuid (&FwVolHeader->FileSystemGuid, &gEfiSystemNvDataFvGuid) == FALSE ) {
@@ -1005,6 +1040,7 @@ ValidateFvHeader (
       __FUNCTION__));
     return EFI_NOT_FOUND;
   }
+
 
    // Verify the header checksum
   Checksum = CalculateSum16((UINT16*)FwVolHeader, FwVolHeader->HeaderLength);
@@ -1014,6 +1050,7 @@ ValidateFvHeader (
     return EFI_NOT_FOUND;
   }
 
+  VariableStoreHeader = (VARIABLE_STORE_HEADER*)((UINTN)FwVolHeader + FwVolHeader->HeaderLength);
     // Check the Variable Store Guid
   if (!CompareGuid (&VariableStoreHeader->Signature, &gEfiVariableGuid) &&
       !CompareGuid (&VariableStoreHeader->Signature, &gEfiAuthenticatedVariableGuid)) {
@@ -1028,23 +1065,6 @@ ValidateFvHeader (
       __FUNCTION__));
     return EFI_NOT_FOUND;
   }
-
-#if 0
-  //
-  // Verify the header checksum
-  //
-  HeaderLength  = (UINT16) (FwVolHeader->HeaderLength / 2);
-  Ptr           = (UINT16 *) FwVolHeader;
-  Checksum      = 0;
-  while (HeaderLength > 0) {
-    Checksum = *Ptr++;
-    HeaderLength--;
-  }
-
-  if (Checksum != 0) {
-    return EFI_NOT_FOUND;
-  }
-#endif
   return EFI_SUCCESS;
 }
 
@@ -1158,14 +1178,12 @@ DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
   ASSERT ((FixedPcdGet32 (PcdFlashNvStorageVariableBase) % BLOCK_SIZE) == 0);
   ASSERT ((FixedPcdGet32 (PcdFlashNvStorageFtwWorkingBase) % BLOCK_SIZE) == 0);
   ASSERT ((FixedPcdGet32 (PcdFlashNvStorageFtwSpareBase) % BLOCK_SIZE) == 0);
-DEBUG ((DEBUG_ERROR, "Addr = %lx %a. %u\n", Addr, __FUNCTION__, __LINE__));
   // Read the file from disk and copy it to memory
   // FIXME Addr is probably not needed we can use mFlashNvStorageVariableBase
 #if EEPROM_FUNC
   PreRead (Addr);
   DbgMem ("In flash data", Addr);
 #endif
-DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
   FwVolHeader = (EFI_FIRMWARE_VOLUME_HEADER *) Addr;
   Status = ValidateFvHeader(FwVolHeader);
   if (EFI_ERROR (Status)) {
@@ -1200,7 +1218,6 @@ DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
   } else {
     DEBUG ((DEBUG_INFO, "%a: Found valid FVB Header.\n", __FUNCTION__));
   }
-
   return Status;
 }
 
