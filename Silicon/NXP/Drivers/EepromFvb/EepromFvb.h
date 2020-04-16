@@ -25,7 +25,7 @@ struct _MEM_INSTANCE
 
 typedef struct _MEM_INSTANCE            MEM_INSTANCE;
 
-#define NBLOCKS                    (3 * 4) // EFI Vars, FTW working, FTW spare
+#define NBLOCKS                    (3 * 16) // EFI Vars, FTW working, FTW spare
 #define BLOCK_SIZE                 SIZE_4KB
 
 #define FLASH_SIGNATURE            SIGNATURE_32('e', 'p', 'r', 'm')

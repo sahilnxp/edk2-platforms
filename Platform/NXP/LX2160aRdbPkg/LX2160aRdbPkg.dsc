@@ -173,11 +173,11 @@
 #     NULL|MdeModulePkg/Library/VarCheckUefiLib/VarCheckUefiLib.inf
 #     NULL|EmbeddedPkg/Library/NvVarStoreFormattedLib/NvVarStoreFormattedLib.inf
 #  }
+#  MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
   MdeModulePkg/Universal/Variable/RuntimeDxe/VariableSmmRuntimeDxe.inf {
       <LibraryClasses>
       NULL|StandaloneMmPkg/Library/VariableMmDependency/VariableMmDependency.inf
   }
-  MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
 
   OpteePkg/Drivers/OpteeClientDxe/OpteeClientDxe.inf
   OpteePkg/Drivers/MmCommunicationDxe/MmCommunication.inf

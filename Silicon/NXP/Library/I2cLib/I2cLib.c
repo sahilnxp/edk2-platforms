@@ -317,7 +317,7 @@ I2cRead (
     // Set No ACK = 0
     MmioAnd8 ((UINTN)&Regs->Ibcr, ~I2C_IBCR_NOACK);
   }
-
+DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
   // Perform a dummy read to initiate the receive operation.
   MmioRead8 ((UINTN)&Regs->Ibdr);
 
@@ -460,7 +460,7 @@ I2cBusXfer (
 
   Regs = (I2C_REGS *)Base;
   IsLastOperation = FALSE;
-
+DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
   Status = I2cBusTestBusBusy (Regs, I2C_BUS_TEST_IDLE);
   if (EFI_ERROR (Status)) {
     goto ErrorExit;
@@ -470,7 +470,7 @@ I2cBusXfer (
   if (EFI_ERROR (Status)) {
     goto ErrorExit;
   }
-
+DEBUG ((DEBUG_ERROR, "%a. %u\n", __FUNCTION__, __LINE__));
   for (Index = 0, Operation = RequestPacket->Operation;
        Index < RequestPacket->OperationCount;
        Index++, Operation++) {
@@ -566,7 +566,6 @@ I2cBusReadReg (
   OperationCount++;
 
   RequestPacket.OperationCount = OperationCount;
-  DEBUG ((DEBUG_ERROR, "Reached %a %u\n", __FUNCTION__, __LINE__));
 
   Status = I2cBusXfer (
              Base, SlaveAddress,

@@ -39,7 +39,6 @@ FpgaRead (
 
   I2cBase = ( EFI_PHYSICAL_ADDRESS)(FixedPcdGet64 (PcdI2c0BaseAddr) +
                         (QIXIS_BASE_I2C_BUS * FixedPcdGet32 (PcdI2cSize)));
-  DEBUG ((DEBUG_ERROR, "Reg = %x %a %u\n", Reg, __FUNCTION__, __LINE__));
 
   I2cBusReadReg (I2cBase, QIXIS_BASE_I2C_ADR, Reg, 1, &Val, 1);
   return Val;
@@ -85,14 +84,12 @@ GetBoardSysClk (
   VOID
   )
 {
-#if 0
   UINT8 SysclkConf;
   SysclkConf = FPGA_READ (BrdCfg[1]);
   switch (SysclkConf & FPGA_CLK_MASK) {
     case CLK_100:
       return SYSCLK_100_MHZ;
   }
-#endif
   return SYSCLK_100_MHZ;
 }
 

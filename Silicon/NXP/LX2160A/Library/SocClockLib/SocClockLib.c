@@ -53,20 +53,17 @@ SocGetClock (
   if (IpModule >= IP_MAX) {
     return 0;
   }
-  DEBUG ((DEBUG_ERROR, "Reached %a %u\n", __FUNCTION__, __LINE__));
 
   GurBase = (VOID *)PcdGet64 (PcdGutsBaseAddr);
   ASSERT (GurBase != NULL);
 
   Rcw = (RCW_FIELDS *)GurBase->RcwSr;
   ReturnValue = 0;
-  DEBUG ((DEBUG_ERROR, "Reached  RCW = %p %a %u\n", Rcw, __FUNCTION__, __LINE__));
   
   SysClkHz = GetBoardSysClk ();
   ASSERT (SysClkHz != 0);
   PlatformClk = (SysClkHz * Rcw->SysPllRat) >> 1;
 
-  DEBUG ((DEBUG_ERROR, "Reached %a, %u\n", __FUNCTION__, __LINE__));
   switch (IpModule) {
     case IP_SYSCLK:
     case IP_USB_PHY:
