@@ -130,7 +130,6 @@ FvbSetAttributes(
   IN OUT    EFI_FVB_ATTRIBUTES_2                 *Attributes
   )
 {
- // DEBUG ((DEBUG_ERROR, "FvbSetAttributes(0x%X) is not supported\n",*Attributes));
   return EFI_SUCCESS;
 }
 
@@ -169,7 +168,6 @@ FvbGetPhysicalAddress (
 /**
   Write data to I2C EEPROM.
 
-  @param[in]  Base                   Base Address of I2c controller's registers
   @param[in]  SlaveAddress           Logical Address of EEPROM block.
   @param[in]  RegAddress             Register Address in Slave's memory map
   @param[in]  RegAddressWidthInBytes Number of bytes in RegAddress to send to
@@ -189,7 +187,7 @@ FvbGetPhysicalAddress (
 **/
 EFI_STATUS
 EFIAPI
-Eeprom_Write (
+EepromWrite (
   IN  UINT32  SlaveAddress,
   IN  UINT64  RegAddress,
   IN  UINT8   RegAddressWidthInBytes,
@@ -197,54 +195,14 @@ Eeprom_Write (
   IN  UINT32  RegValueNumBytes
   )
 {
-  EFI_I2C_OPERATION       *Operations;
-  EFI_I2C_REQUEST_PACKET         RequestPacket;
-  UINTN                   OperationCount;
-  UINT8                   Address[sizeof (RegAddress)];
-  UINT8                   *PtrAddress;
-  EFI_STATUS              Status;
-
-  Status = EFI_SUCCESS;
-
-  ZeroMem (&RequestPacket, sizeof (RequestPacket));
-  OperationCount = 0;
-  Operations = RequestPacket.Operation;
-  PtrAddress = Address;
-
-  if (RegAddressWidthInBytes > ARRAY_SIZE (Address)) {
-    return EFI_INVALID_PARAMETER;
-  }
-
-  if (RegAddressWidthInBytes != 0) {
-    Operations[OperationCount].LengthInBytes = RegAddressWidthInBytes;
-    Operations[OperationCount].Buffer = PtrAddress;
-    while (RegAddressWidthInBytes--) {
-      *PtrAddress++ = RegAddress >> (8 * RegAddressWidthInBytes);
-    }
-    OperationCount++;
-  }
-
-  Operations[OperationCount].LengthInBytes = RegValueNumBytes;
-  Operations[OperationCount].Buffer = RegValue;
-  Operations[OperationCount].Flags = 0;
-  OperationCount++;
-
-  RequestPacket.OperationCount = OperationCount;
-
-  Status = I2cBusXfer(I2cBase, SlaveAddress, &RequestPacket);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "I2cBusXfer Failed while Writing data\n"));
-    return Status;
-  }
-
-  return Status;
+   return I2cBusWriteReg(I2cBase, SlaveAddress, RegAddress,
+  			RegAddressWidthInBytes, RegValue, RegValueNumBytes);
 }
 
 
 /**
   Read data from I2C EEPROM.
 
-  @param[in]  Base                   Base Address of I2c controller's registers
   @param[in]  SlaveAddress           Logical Address of EEPROM block.
   @param[in]  RegAddress             Register Address in Slave's memory map
   @param[in]  RegAddressWidthInBytes Number of bytes in RegAddress to send to
@@ -264,7 +222,7 @@ Eeprom_Write (
 **/
 EFI_STATUS
 EFIAPI
-Eeprom_Read (
+EepromRead (
   IN  UINT32  SlaveAddress,
   IN  UINT64  RegAddress,
   IN  UINT8   RegAddressWidthInBytes,
@@ -272,46 +230,49 @@ Eeprom_Read (
   IN  UINT32  RegValueNumBytes
   )
 {
-  EFI_I2C_OPERATION       *Operations;
-  EFI_I2C_REQUEST_PACKET         RequestPacket;
-  UINTN                   OperationCount;
-  UINT8                   Address[sizeof (RegAddress)];
-  UINT8                   *PtrAddress;
-  EFI_STATUS              Status;
+  return I2cBusReadReg(I2cBase, SlaveAddress, RegAddress,
+  			RegAddressWidthInBytes, RegValue, RegValueNumBytes);
+}
 
-  Status = EFI_SUCCESS;
-  ZeroMem (&RequestPacket, sizeof (RequestPacket));
-  OperationCount = 0;
-  Operations = RequestPacket.Operation;
-  PtrAddress = Address;
+STATIC
+UINT32
+EFIAPI
+GetEepromSlaveAddress (
+  IN        EFI_LBA                               Lba
+  )
+{
 
-  if (RegAddressWidthInBytes > ARRAY_SIZE (Address)) {
-    return EFI_INVALID_PARAMETER;
+  if (Lba >= 0 && Lba < 256) {
+  	return EEPROM_VARIABLE_STORE_ADDR;
+  } else if (Lba >= 256 && Lba < 512) {
+  	return EEPROM_FTW_WORKING_SPACE_ADDR;
+  } else if (Lba >=512 && Lba < 768 ) {
+  	return EEPROM_FTW_SPARE_SPACE_ADDR;
+  } else {
+  	return EEPROM_VARIABLE_STORE_MAX;
+  }
+#if 0
+  if (Lba >= 0 && Lba < 16) {
+  	return EEPROM_VARIABLE_STORE_ADDR;
+  } else if (Lba >= 16 && Lba < 32) {
+  	return EEPROM_FTW_WORKING_SPACE_ADDR;
+  } else if (Lba >=32 ) {
+  	return EEPROM_FTW_SPARE_SPACE_ADDR;
+  } else {
+  	return EEPROM_VARIABLE_STORE_MAX;
   }
 
-  if (RegAddressWidthInBytes != 0) {
-    Operations[OperationCount].LengthInBytes = RegAddressWidthInBytes;
-    Operations[OperationCount].Buffer = PtrAddress;
-    while (RegAddressWidthInBytes--) {
-      *PtrAddress++ = RegAddress >> (8 * RegAddressWidthInBytes);
-    }
-    OperationCount++;
+  switch(Lba/16) {
+  	case 0:
+		return EEPROM_VARIABLE_STORE_ADDR;
+	case 1:
+		return EEPROM_FTW_WORKING_SPACE_ADDR;
+	case 2:
+		return EEPROM_FTW_SPARE_SPACE_ADDR;
+	default:
+		return EEPROM_VARIABLE_STORE_MAX;
   }
-
-  Operations[OperationCount].LengthInBytes = RegValueNumBytes;
-  Operations[OperationCount].Buffer = RegValue;
-  Operations[OperationCount].Flags = I2C_FLAG_READ;
-  OperationCount++;
-
-  RequestPacket.OperationCount = OperationCount;
-
-  Status = I2cBusXfer(I2cBase, SlaveAddress, &RequestPacket);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "I2cBusXfer Failed while reading data\n"));
-    return Status;
-  }
-
-  return Status;
+  #endif
 }
 
 /**
@@ -369,18 +330,18 @@ FvbRead (
   EFI_STATUS                  Status = EFI_SUCCESS;
   EFI_STATUS                  TmpStatus;
   VOID         *Base;
-  UINT64       Eeprom_addr = 0;
+  UINT64       EepromAddr = 0;
+  UINT32       EepromSlaveAddr = 0;
+
   TmpStatus = EFI_SUCCESS;
 
   MEM_INSTANCE		*Instance;
-  DEBUG ((DEBUG_ERROR, "%a, %u\n", __FUNCTION__, __LINE__));
+
   Instance = INSTANCE_FROM_FVB_THIS(This);
   if (Instance->Initialized == FALSE) {
 	  Instance->Initialize (Instance);
-	  DEBUG ((DEBUG_ERROR, "%a, %u Initialization Done\n", __FUNCTION__, __LINE__));
   }
 
-  DEBUG ((DEBUG_ERROR, "%a, %u\n", __FUNCTION__, __LINE__));
   // Cache the block size to avoid de-referencing pointers all the time
   BlockSize = Instance->BlockSize;
 
@@ -405,9 +366,20 @@ FvbRead (
   // Update the memory copy
   CopyMem (Buffer, Base, *NumBytes);
 
-  Eeprom_addr = Lba * BlockSize + Offset;
+//  EepromAddr = ((Lba % 16) * BlockSize) + Offset;
+  EepromAddr = ((Lba % 256) * BlockSize) + Offset;
+  EepromSlaveAddr = GetEepromSlaveAddress(Lba);
+  if (EepromSlaveAddr == EEPROM_VARIABLE_STORE_MAX) {
+  	Status = EFI_DEVICE_ERROR;
+	goto exit;
+  }
 
-  Status = Eeprom_Read(EEPROM_VARIABLE_STORE_ADDR, Eeprom_addr,
+  DEBUG ((
+    DEBUG_INFO,
+    "FvbRead(Parameters: Lba=%ld, Offset=0x%x, *NumBytes=0x%x, Buffer @ 0x%08x), BlockSize=0x%x EepromAddr = %lx, EepromSlaveAddr = %x\n",
+    Lba, Offset, *NumBytes, Buffer, BlockSize, EepromAddr, EepromSlaveAddr
+    ));
+  Status = EepromRead(EepromSlaveAddr, EepromAddr,
   			EEPROM_ADDR_WIDTH_2BYTES, Buffer, *NumBytes);
   if (!EFI_ERROR(Status)) {
     return TmpStatus;
@@ -415,7 +387,7 @@ FvbRead (
     DEBUG ((DEBUG_ERROR, "Eeprom_Read returned %r\n", Status));
     Status = EFI_DEVICE_ERROR;
   }
-
+exit:
   return Status;
 }
 
@@ -487,17 +459,17 @@ FvbWrite (
 
   EFI_STATUS                  Status = EFI_SUCCESS;
   EFI_STATUS                  TmpStatus;
-
-  TmpStatus = EFI_SUCCESS;
   MEM_INSTANCE		*Instance;
   VOID*              Base;
-  UINT64             Eeprom_addr = 0;
-  DEBUG ((DEBUG_ERROR, "%a, %u\n", __FUNCTION__, __LINE__));
+  UINT64             EepromAddr = 0;
+  UINT32       EepromSlaveAddr = 0;
+
+  TmpStatus = EFI_SUCCESS;
   Instance = INSTANCE_FROM_FVB_THIS(This);
   if (Instance->Initialized == FALSE) {
 	  Instance->Initialize (Instance);
   }
-  DEBUG ((DEBUG_ERROR, "%a, %u\n", __FUNCTION__, __LINE__));
+
   // Cache the block size to avoid de-referencing pointers all the time
   BlockSize = Instance->BlockSize;
 
@@ -518,14 +490,24 @@ FvbWrite (
     TmpStatus = EFI_BAD_BUFFER_SIZE;
   }
 
-  Base = (VOID *)Instance->MemBaseAddress + Lba * BlockSize + Offset;
-    // FIXME make op-tee report write failures on a register and abort the in-memory update
-  // if writing the RPMB fails + return the correct status
+  Base = (VOID *)Instance->MemBaseAddress + (Lba * BlockSize) + Offset;
   // Update the memory copy
   CopyMem (Base, Buffer, *NumBytes);
-  Eeprom_addr = Lba * BlockSize + Offset;
 
-  Status = Eeprom_Write(EEPROM_VARIABLE_STORE_ADDR, Eeprom_addr,
+  EepromAddr = ((Lba % 256) * BlockSize) + Offset;
+//  EepromAddr = ((Lba % 16) * BlockSize) + Offset;
+  EepromSlaveAddr = GetEepromSlaveAddress(Lba);
+  if (EepromSlaveAddr == EEPROM_VARIABLE_STORE_MAX) {
+  	Status = EFI_DEVICE_ERROR;
+	goto exit;
+  }
+
+  DEBUG ((
+    DEBUG_INFO,
+    "FvbWrite(Parameters: Lba=%ld, Offset=0x%x, *NumBytes=0x%x, Buffer @ 0x%08x), BlockSize=0x%x EepromAddr = %lx, EepromSlaveAddr = %x\n",
+    Lba, Offset, *NumBytes, Buffer, BlockSize, EepromAddr, EepromSlaveAddr
+    ));
+  Status = EepromWrite(EepromSlaveAddr, EepromAddr,
   			EEPROM_ADDR_WIDTH_2BYTES, Buffer, *NumBytes);
   if (!EFI_ERROR(Status)) {
     return TmpStatus;
@@ -533,7 +515,7 @@ FvbWrite (
     DEBUG ((DEBUG_ERROR, "Eeprom_Write returned %r\n", Status));
     Status = EFI_DEVICE_ERROR;
   }
-
+exit:
   return Status;
 }
 
@@ -587,133 +569,56 @@ FvbEraseBlocks (
   ...
   )
 {
-//  DEBUG ((DEBUG_ERROR, "********************* FvbEraseBlocks unsupported for now\n"));
-//  return EFI_UNSUPPORTED;
-
-   VA_LIST       Args;
-  EFI_LBA       Start;
+  VA_LIST       Args;
+  EFI_LBA       Start, End;
   UINTN         Length;
   MEM_INSTANCE *Instance;
-  UINTN NumBytes;
-//  CHAR8        *File;
-//  VOID         *Base;
-//  UINTN         RelativeOffset;
+  UINT32 EepromSlaveAddr = 0;
+  UINT64             EepromAddr = 0;
+  EFI_STATUS	Status = EFI_SUCCESS;
+  UINT32 Index = 0;
+  UINT64 EraseBuff[4];
 
   Instance = INSTANCE_FROM_FVB_THIS(This);
 
+  SetMem64 (EraseBuff, Instance->BlockSize, ~0UL);
+
+  DEBUG ((DEBUG_INFO, "***** %a, %u ******\n", __FUNCTION__, __LINE__));
   VA_START (Args, This);
   for (Start = VA_ARG (Args, EFI_LBA);
-       Start != EFI_LBA_LIST_TERMINATOR;
-       Start = VA_ARG (Args, EFI_LBA)) {
+    Start != EFI_LBA_LIST_TERMINATOR;
+    Start = VA_ARG (Args, EFI_LBA)) {
     Length = VA_ARG (Args, UINTN);
-  NumBytes = Length * BLOCK_SIZE;
-  // FIXME first write then set the in memory buffer
-  SetMem64 ((VOID *)Instance->MemBaseAddress + Start * BLOCK_SIZE, Length * BLOCK_SIZE, ~0UL);
-//  Base = (VOID *)Instance->MemBaseAddress + Start * BLOCK_SIZE;
-//  File = GetFileAndOffset (Base, &RelativeOffset);
-//  SendSvc (SP_SVC_RPMB_WRITE, File, (UINTN) Base, NumBytes, RelativeOffset);
-  //DEBUG ((EFI_D_INFO, "%a Erase %lu LEN %lu Buf %p\n", __func__, Start, Length, Base));
-  //OpTeeRpmbFvWrite(&Instance->FvbProtocol, Start , 0, &NumBytes, Base);
+    End = Start + Length;
+
+    DEBUG ((DEBUG_INFO, "Start = %lu, End = %lu, Length = %u, %a, %u\n",
+                        Start, End, Length, __FUNCTION__, __LINE__));
+      for (Index = Start; Index < End; Index++) {
+        EepromSlaveAddr = GetEepromSlaveAddress(Index);
+        EepromAddr = ((Index % 256) * (Instance->BlockSize));
+
+        DEBUG ((DEBUG_INFO, "SlaveAddr = %x, StartLba = %lu, %a, %u\n",
+                        EepromSlaveAddr, Index, __FUNCTION__, __LINE__));
+
+        Status = EepromWrite(EepromSlaveAddr, EepromAddr,
+                                             EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)EraseBuff,
+                                             Instance->BlockSize);
+        if (EFI_ERROR(Status)) {
+          DEBUG ((DEBUG_ERROR, "EepromWrite failed\n"));
+        }
+       }
+	// FIXME first write then set the in memory buffer
+	SetMem64 ((VOID *)Instance->MemBaseAddress + Start * BLOCK_SIZE, Length * BLOCK_SIZE, ~0UL);
+	  
+	//  Base = (VOID *)Instance->MemBaseAddress + Start * BLOCK_SIZE;
+	//  File = GetFileAndOffset (Base, &RelativeOffset);
+	//  SendSvc (SP_SVC_RPMB_WRITE, File, (UINTN) Base, NumBytes, RelativeOffset);
+	  //DEBUG ((EFI_D_INFO, "%a Erase %lu LEN %lu Buf %p\n", __func__, Start, Length, Base));
+	  //OpTeeRpmbFvWrite(&Instance->FvbProtocol, Start , 0, &NumBytes, Base);
   }
 
   VA_END (Args);
-
   return EFI_SUCCESS;
-#if 0
-  EFI_STATUS                  Status;
-  VA_LIST                     Args;
-  UINTN                       BlockOffset; // Offset of Lba to erase
-  EFI_LBA                     StartingLba; // Lba from which we start erasing
-  UINTN                       NumOfLba; // Number of Lba blocks to erase
-  MEM_INSTANCE		*Instance;
-
-  Instance = INSTANCE_FROM_FVB_THIS(This);
-
-  DEBUG ((DEBUG_BLKIO, "FvbEraseBlocks()\n"));
-
-  Status = EFI_SUCCESS;
-
-  // Before erasing, check the entire list of parameters to ensure all specified blocks are valid
-  VA_START (Args, This);
-  do {
-    // Get the Lba from which we start erasing
-    StartingLba = VA_ARG (Args, EFI_LBA);
-
-    // Have we reached the end of the list?
-    if (StartingLba == EFI_LBA_LIST_TERMINATOR) {
-      //Exit the while loop
-      break;
-    }
-
-    // How many Lba blocks are we requested to erase?
-    NumOfLba = VA_ARG (Args, UINTN);
-
-    // All blocks must be within range
-    DEBUG ((
-      DEBUG_BLKIO,
-      "FvbEraseBlocks: Check if: ( StartingLba=%ld + NumOfLba=%Lu - 1 ) > LastBlock=%ld.\n",
-      StartingLba,
-      (UINT64)NumOfLba,
-      Context->LastLba
-      ));
-    if ((NumOfLba == 0) || ((StartingLba + NumOfLba - 1) > Context->LastLba)) {
-      VA_END (Args);
-      DEBUG ((DEBUG_ERROR, "FvbEraseBlocks: ERROR - Lba range goes past the last Lba.\n"));
-      Status = EFI_INVALID_PARAMETER;
-      goto EXIT;
-    }
-  } while (TRUE);
-  VA_END (Args);
-
-  //
-  // To get here, all must be ok, so start erasing
-  //
-  VA_START (Args, This);
-  do {
-    // Get the Lba from which we start erasing
-    StartingLba = VA_ARG (Args, EFI_LBA);
-
-    // Have we reached the end of the list?
-    if (StartingLba == EFI_LBA_LIST_TERMINATOR) {
-      // Exit the while loop
-      break;
-    }
-
-    // How many Lba blocks are we requested to erase?
-    NumOfLba = VA_ARG (Args, UINTN);
-
-    // Go through each one and erase it
-    while (NumOfLba > 0) {
-
-      // Get the offset of Lba to erase
-      //FIXME: Set the BlockOffset
-      BlockOffset = GET_BLOCK_OFFSET(StartingLba);
-
-      // Erase it
-      DEBUG ((
-        DEBUG_BLKIO,
-        "FvbEraseBlocks: Erasing Lba=%ld @ Offset 0x%08x.\n",
-        StartingLba, BlockOffset
-        ));
-	//FIXME: Since we have kept the Block Size to be 64KB, so there is only 1 block which will
-	//be erased. So whole block will be erased. For now not supporting the FvbEraseBlocks.
-//	Status = Eeprom_Write();
-	if (EFI_ERROR (Status)) {
-        VA_END (Args);
-        Status = EFI_DEVICE_ERROR;
-        goto EXIT;
-      }
-
-      // Move to the next Lba
-      StartingLba++;
-      NumOfLba--;
-    }
-  } while (TRUE);
-  VA_END (Args);
-
-EXIT:
-  return Status;
-#endif
 }
 
 /**
@@ -760,14 +665,54 @@ FvbGetBlockSize (
   return EFI_SUCCESS;
 }
 
+#if 0
+STATIC
+EFI_STATUS
+EFIAPI
+EraseFlashHeaders (
+  MEM_INSTANCE *Instance
+ )
+{
+  EFI_STATUS Status;
+  UINT64 EraseBuff[4];
 
+  SetMem64 (EraseBuff, Instance->BlockSize, ~0UL);
+  hexdump ("", (char*)EraseBuff, Instance->BlockSize);
+
+  Status = EepromWrite(EEPROM_VARIABLE_STORE_ADDR, 0,
+                                        EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
+                                        Instance->BlockSize);
+  if (EFI_ERROR(Status)) {
+    DEBUG ((DEBUG_ERROR, "EepromWrite failed for EEPROM_VARIABLE_STORE_ADDR\n"));
+    goto exit;
+  }
+
+  Status = EepromWrite(EEPROM_FTW_WORKING_SPACE_ADDR, 0,
+                                        EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
+                                        Instance->BlockSize);
+  if (EFI_ERROR(Status)) {
+    DEBUG ((DEBUG_ERROR, "EepromWrite failed for EEPROM_FTW_WORKING_SPACE_ADDR\n"));
+    goto exit;
+  }
+
+  Status = EepromWrite(EEPROM_FTW_SPARE_SPACE_ADDR, 0,
+                                        EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
+                                        Instance->BlockSize);
+  if (EFI_ERROR(Status)) {
+    DEBUG ((DEBUG_ERROR, "EepromWrite failed for EEPROM_FTW_SPARE_SPACE_ADDR\n"));
+    goto exit;
+  }
+
+exit:
+  return Status;
+}
+#endif
 
 /**
-  Since we use a memory backed storage we need to restore the RPMB contents
+  Since we use a memory backed storage we need to restore the EEPROM contents
   into memory before we register the Fvb protocol.
-  The contiguous memory in EDK2 is ampped is 3 OP-TEE files
 
-  @param Addr Address to copy flash contents to
+  @param Instance
 
   @retval     0 on success, OP-TEE error on failure
 **/
@@ -778,43 +723,42 @@ ReadEntireFlash (
   MEM_INSTANCE *Instance
  )
 {
-  UINTN ReadAddr;
+  EFI_PHYSICAL_ADDRESS ReadAddr;
   EFI_STATUS Status;
   UINT64 StartOffset = 0;
 
-  UINTN StorageFtwWorkingSize = PcdGet32(PcdFlashNvStorageFtwWorkingSize);
   UINTN StorageVariableSize   = PcdGet32(PcdFlashNvStorageVariableSize);
+  UINTN StorageFtwWorkingSize = PcdGet32(PcdFlashNvStorageFtwWorkingSize);
   UINTN StorageFtwSpareSize   = PcdGet32(PcdFlashNvStorageFtwSpareSize);
 
   ReadAddr = Instance->MemBaseAddress;
 
-  Status = Eeprom_Read(EEPROM_VARIABLE_STORE_ADDR, StartOffset,
+  Status = EepromRead(EEPROM_VARIABLE_STORE_ADDR, StartOffset,
   				EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)ReadAddr, StorageVariableSize);
   if (EFI_ERROR(Status)) {
-    DEBUG ((DEBUG_ERROR, "Eeprom_Read failed for Variables\n"));
+    DEBUG ((DEBUG_ERROR, "EepromRead failed for Variables\n"));
 	goto exit;
   }
 
-  Status = Eeprom_Read(EEPROM_FTW_WORKING_SPACE_ADDR, StartOffset,
-  				EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)(ReadAddr + StorageVariableSize), StorageFtwWorkingSize);
+  Status = EepromRead(EEPROM_FTW_WORKING_SPACE_ADDR, StartOffset,
+  				EEPROM_ADDR_WIDTH_2BYTES, ((UINT8 *)(ReadAddr) + StorageVariableSize), StorageFtwWorkingSize);
   if (EFI_ERROR(Status)) {
-    DEBUG ((DEBUG_ERROR, "Eeprom_Read failed for FTW Working Space\n"));
+    DEBUG ((DEBUG_ERROR, "EepromRead failed for FTW Working Space\n"));
 	goto exit;
   }
 
-  Status = Eeprom_Read(EEPROM_FTW_SPARE_SPACE_ADDR, StartOffset,
+  Status = EepromRead(EEPROM_FTW_SPARE_SPACE_ADDR, StartOffset,
   				EEPROM_ADDR_WIDTH_2BYTES,
-				(UINT8 *)(ReadAddr + StorageVariableSize + StorageFtwWorkingSize),
+				((UINT8 *)(ReadAddr) + StorageVariableSize + StorageFtwWorkingSize),
 				StorageFtwSpareSize);
   if (EFI_ERROR(Status)) {
-  	DEBUG ((DEBUG_ERROR, "Eeprom_Read failed for FTW Spare Space\n"));
+  	DEBUG ((DEBUG_ERROR, "EepromRead failed for FTW Spare Space\n"));
 	goto exit;
   }
 
 exit:
   return Status;
 }
-
 
 STATIC
 EFI_STATUS
@@ -943,12 +887,12 @@ InitializeFvAndVariableStoreHeaders (
                               FirmwareVolumeHeader->HeaderLength;
   VariableStoreHeader->Format = VARIABLE_STORE_FORMATTED;
   VariableStoreHeader->State = VARIABLE_STORE_HEALTHY;
-  
+
   // Install the combined super-header in EEPROM Flash
-  Status = Eeprom_Write(EEPROM_VARIABLE_STORE_ADDR, 0,
+  Status = EepromWrite(EEPROM_VARIABLE_STORE_ADDR, 0,
     EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)Headers, (UINT32)HeadersLength);
   if (EFI_ERROR(Status)) {
-    DEBUG ((DEBUG_ERROR, "FvbWrite failed\n"));
+    DEBUG ((DEBUG_ERROR, "EepromWrite failed for installing Super-Header\n"));
 	Status = EFI_DEVICE_ERROR;
     goto Exit;
   }
@@ -976,7 +920,6 @@ FvbInitialize (
 	  return EFI_SUCCESS;
   }
 
-  DEBUG ((DEBUG_ERROR, "%a, %u\n", __FUNCTION__, __LINE__));
   // FirmwareVolumeHeader->FvLength is declared to have the Variable area
   // AND the FTW working area AND the FTW Spare contiguous.
   ASSERT (PcdGet32 (PcdFlashNvStorageVariableBase) +
@@ -986,7 +929,6 @@ FvbInitialize (
           PcdGet32 (PcdFlashNvStorageFtwWorkingSize) ==
           PcdGet32 (PcdFlashNvStorageFtwSpareBase));
 
-  DEBUG ((DEBUG_ERROR, "%a, %u\n", __FUNCTION__, __LINE__));
   // Check if the size of the area is at least one block size
   ASSERT ((PcdGet32 (PcdFlashNvStorageVariableSize) > 0) &&
           (PcdGet32 (PcdFlashNvStorageVariableSize) / BLOCK_SIZE > 0));
@@ -995,7 +937,6 @@ FvbInitialize (
   ASSERT ((PcdGet32 (PcdFlashNvStorageFtwSpareSize) > 0) &&
           (PcdGet32 (PcdFlashNvStorageFtwSpareSize) / BLOCK_SIZE > 0));
 
-  DEBUG ((DEBUG_ERROR, "%a, %u\n", __FUNCTION__, __LINE__));
   // Ensure the Variable areas are aligned on block size boundaries
   ASSERT ((PcdGet32 (PcdFlashNvStorageVariableBase) % BLOCK_SIZE) == 0);
   ASSERT ((PcdGet32 (PcdFlashNvStorageFtwWorkingBase) % BLOCK_SIZE) == 0);
@@ -1005,23 +946,28 @@ FvbInitialize (
   // Read the file from disk and copy it to memory
   // FIXME Addr is probably not needed we can use mFlashNvStorageVariableBase
 
-  DEBUG ((DEBUG_ERROR, "%a, %u\n", __FUNCTION__, __LINE__));
+  DEBUG ((DEBUG_INFO, "%a: Reading from EEPROM, It will take around 10 Secs\n", __FUNCTION__));
   Status = ReadEntireFlash(Instance);
   if (EFI_ERROR(Status)) {
     DEBUG ((DEBUG_ERROR, "ReadEntireFlash failed\n"));
     goto exit;
   }
-  DbgMem ("In flash data", Instance->MemBaseAddress);
 
   FwVolHeader = (EFI_FIRMWARE_VOLUME_HEADER *) mFlashNvStorageVariableBase;
   Status = ValidateFvHeader(FwVolHeader);
-//  Status = EFI_NOT_FOUND;
   if (EFI_ERROR (Status)) {
     // There is no valid header, so time to install one.
     DEBUG ((DEBUG_INFO, "%a: The FVB Header is not valid.\n", __FUNCTION__));
 
     // Reset memory
     SetMem64 ((VOID *)Instance->MemBaseAddress, NBLOCKS * BLOCK_SIZE, ~0UL);
+#if 0
+    Status = EraseFlashHeaders(Instance);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, " EraseFlashHeaders failed \n"));
+      return Status;
+    }
+#endif
     DbgMem ("In Memory data", Instance->MemBaseAddress);
     DEBUG ((DEBUG_INFO, "%a: Installing a correct one for this volume.\n",
       __FUNCTION__));
@@ -1035,8 +981,9 @@ FvbInitialize (
   } else {
     DEBUG ((DEBUG_INFO, "%a: Found valid FVB Header.\n", __FUNCTION__));
   }
+
   Instance->Initialized = TRUE;
-  DEBUG ((DEBUG_ERROR, "%a, %u\n", __FUNCTION__, __LINE__));
+
 exit:
   return Status;
 }
@@ -1047,7 +994,7 @@ EepromFvbInitialize ()
   EFI_STATUS           Status;
   VOID *Addr;
 
-  Addr = AllocatePages(NBLOCKS);
+  Addr = AllocatePages(48);
   ASSERT (Addr != NULL);
 
   SetMem (&mInstance, sizeof (mInstance), 0);
@@ -1082,7 +1029,7 @@ EepromFvbInitialize ()
                     );
   ASSERT_EFI_ERROR (Status);
 
-  DEBUG ((DEBUG_INFO, "%a: Register OP-TEE RPMB Fvb\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "%a: Register EEPROM Fvb\n", __FUNCTION__));
   DEBUG ((DEBUG_INFO, "%a: Using NV store FV in-memory copy at 0x%lx\n",
     __FUNCTION__, PatchPcdGet32 (PcdFlashNvStorageVariableBase)));
 
@@ -1099,7 +1046,7 @@ EepromInitialize (
   EFI_STATUS                    Status;
   Status = EFI_SUCCESS;
 
-  I2cBase = (EFI_PHYSICAL_ADDRESS)(FixedPcdGet64 (PcdI2c5BaseAddr));
+  I2cBase = (UINTN)(FixedPcdGet64 (PcdI2c5BaseAddr));
   Status = I2cInitialize(I2cBase, I2C_CLOCK, PcdGet32(PcdI2cSpeed));
   if (EFI_ERROR (Status)) {
     return Status;

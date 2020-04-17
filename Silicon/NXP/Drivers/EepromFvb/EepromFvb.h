@@ -8,8 +8,8 @@
 #ifndef __EEPROM_FVB_
 #define __EEPROM_FVB_
 
-#define NBLOCKS                    (3 * 4) // EFI Vars, FTW working, FTW spare
-#define BLOCK_SIZE                 SIZE_4KB
+#define NBLOCKS                    (3 * 256) // EFI Vars, FTW working, FTW spare
+#define BLOCK_SIZE                 0x100
 
 #define FLASH_SIGNATURE            SIGNATURE_32('e', 'p', 'r', 'm')
 #define INSTANCE_FROM_FVB_THIS(a)  CR(a, MEM_INSTANCE, FvbProtocol, \
@@ -23,6 +23,7 @@
 #define EEPROM_VARIABLE_STORE_ADDR			0x54
 #define EEPROM_FTW_WORKING_SPACE_ADDR		0x55
 #define EEPROM_FTW_SPARE_SPACE_ADDR		0x56
+#define EEPROM_VARIABLE_STORE_MAX			0xff
 
 #define EEPROM_ADDR_WIDTH_1BYTE		0x1
 #define EEPROM_ADDR_WIDTH_2BYTES	0x2
@@ -44,12 +45,12 @@ struct _MEM_INSTANCE
 
 
 EFI_STATUS
-Eeprom_Write (IN  UINT32  SlaveAddress, IN  UINT64  RegAddress,
+EepromWrite (IN  UINT32  SlaveAddress, IN  UINT64  RegAddress,
   IN  UINT8   RegAddressWidthInBytes, IN  UINT8   *RegValue,
   IN  UINT32  RegValueNumBytes);
 
 EFI_STATUS
-Eeprom_Read (IN  UINT32  SlaveAddress, IN  UINT64  RegAddress,
+EepromRead (IN  UINT32  SlaveAddress, IN  UINT64  RegAddress,
   IN  UINT8   RegAddressWidthInBytes, IN OUT  UINT8   *RegValue,
   IN  UINT32  RegValueNumBytes);
 
