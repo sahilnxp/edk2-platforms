@@ -8,29 +8,14 @@
 #ifndef __EEPROM_FVB_
 #define __EEPROM_FVB_
 
-struct _MEM_INSTANCE
-{
-    UINT32                              Signature;
-    EFI_HANDLE                          Handle;
-
-    BOOLEAN                             Initialized;
-
-    EFI_PHYSICAL_ADDRESS                MemBaseAddress;
-    UINT32                              BlockSize;
-    UINT16                              NBlocks;
-    EFI_LBA                             StartLba;
-
-    EFI_FIRMWARE_VOLUME_BLOCK_PROTOCOL  FvbProtocol;
-};
-
-typedef struct _MEM_INSTANCE            MEM_INSTANCE;
-
-#define NBLOCKS                    (3 * 16) // EFI Vars, FTW working, FTW spare
+#define NBLOCKS                    (3 * 4) // EFI Vars, FTW working, FTW spare
 #define BLOCK_SIZE                 SIZE_4KB
 
 #define FLASH_SIGNATURE            SIGNATURE_32('e', 'p', 'r', 'm')
 #define INSTANCE_FROM_FVB_THIS(a)  CR(a, MEM_INSTANCE, FvbProtocol, \
-					FLASH_SIGNATURE)
+                                      FLASH_SIGNATURE)
+
+#define I2C_CLOCK			87500000
 
 /* Since there are 4 logical blocks of size 64KB each in EEPROM which can be accessed with
   * specific slave addres 0x54-0x57, we will use single block for Variable, FTW Working,
@@ -42,6 +27,21 @@ typedef struct _MEM_INSTANCE            MEM_INSTANCE;
 #define EEPROM_ADDR_WIDTH_1BYTE		0x1
 #define EEPROM_ADDR_WIDTH_2BYTES	0x2
 #define EEPROM_ADDR_WIDTH_3BYTES	0x3
+
+typedef struct _MEM_INSTANCE         MEM_INSTANCE;
+typedef EFI_STATUS (*MEM_INITIALIZE) (MEM_INSTANCE* Instance);
+struct _MEM_INSTANCE
+{
+    UINT32                              Signature;
+    MEM_INITIALIZE                      Initialize;
+    BOOLEAN                             Initialized;
+    EFI_FIRMWARE_VOLUME_BLOCK_PROTOCOL  FvbProtocol;
+    EFI_HANDLE                          Handle;
+    EFI_PHYSICAL_ADDRESS                MemBaseAddress;
+    UINT16                              BlockSize;
+    UINT16                              NBlocks;
+};
+
 
 EFI_STATUS
 Eeprom_Write (IN  UINT32  SlaveAddress, IN  UINT64  RegAddress,

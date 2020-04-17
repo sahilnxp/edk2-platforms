@@ -48,19 +48,20 @@
   gEfiVariableGuid
 
 [FixedPcd]
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
-
   gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr
   gNxpQoriqLsTokenSpaceGuid.PcdI2cSize
   gNxpQoriqLsTokenSpaceGuid.PcdNumI2cController
 
   gNxpQoriqLsTokenSpaceGuid.PcdI2cBus
   gNxpQoriqLsTokenSpaceGuid.PcdI2cSpeed
+
+[Pcd]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
 
 [Protocols]
   gEfiSmmFirmwareVolumeBlockProtocolGuid          ## PRODUCES

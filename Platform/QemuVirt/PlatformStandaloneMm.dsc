@@ -97,7 +97,7 @@
   gEfiMdePkgTokenSpaceGuid.PcdReportStatusCodePropertyMask|0x0f
 
   ## PL011 - Serial Terminal
-  gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase|0x40706000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase|0x40418000
   gEfiMdePkgTokenSpaceGuid.PcdUartDefaultBaudRate|115200
   gArmPlatformTokenSpaceGuid.PL011UartClkInHz|0xA6E49C0
   gEfiMdePkgTokenSpaceGuid.PcdUartDefaultReceiveFifoDepth|0
@@ -107,29 +107,26 @@
   gEfiSecurityPkgTokenSpaceGuid.PcdUserPhysicalPresence|TRUE
   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxVariableSize|0x2000
   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxAuthVariableSize|0x2800
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase|0x040346000
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize|0x00004000
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase|0x4034A000
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize|0x00004000
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase|0x04034E000
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize|0x00004000
-#  gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize|0x00004000
 
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase|0x040346000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize|0x00010000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase|0x40356000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize|0x00010000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase|0x040366000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize|0x00010000
-  gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize|0x00010000
-
-#  gNxpQoriqLsTokenSpaceGuid.PcdI2c0BaseAddr|0x40707000
-  gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr|0x40707000
+  gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr|0x40419000
   gNxpQoriqLsTokenSpaceGuid.PcdI2cSize|0x10000
   gNxpQoriqLsTokenSpaceGuid.PcdNumI2cController|8
 
   gNxpQoriqLsTokenSpaceGuid.PcdI2cBus|4
   gNxpQoriqLsTokenSpaceGuid.PcdI2cSpeed|100000
+
+[PcdsPatchableInModule]
+  # Allocated memory for EDK2 uppers layers
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase|0x0
+#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize|0x00010000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize|0x00004000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase|0x0
+#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize|0x00010000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize|0x00004000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase|0x0
+#  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize|0x00010000
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize|0x00004000
+  #gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize|0x00010000
 
 ###################################################################################################
 #
@@ -153,10 +150,13 @@
   #
   # Standalone MM components
   #
+  Silicon/NXP/Drivers/EepromFvb/EepromFvb.inf
   StandaloneMmPkg/Core/StandaloneMmCore.inf
   StandaloneMmPkg/Drivers/StandaloneMmCpu/AArch64/StandaloneMmCpu.inf
-  Silicon/NXP/Drivers/EepromFvb/EepromFvb.inf
-  MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteStandaloneMm.inf
+  MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteStandaloneMm.inf {
+    <LibraryClasses>
+      NULL|Silicon/NXP/Drivers/EepromFvb/FixupPcd.inf
+  }
   MdeModulePkg/Universal/Variable/RuntimeDxe/VariableStandaloneMm.inf {
     <LibraryClasses>
       AuthVariableLib|SecurityPkg/Library/AuthVariableLib/AuthVariableLib.inf
@@ -164,6 +164,7 @@
       DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
       VarCheckLib|MdeModulePkg/Library/VarCheckLib/VarCheckLib.inf
       NULL|MdeModulePkg/Library/VarCheckUefiLib/VarCheckUefiLib.inf
+      NULL|Silicon/NXP/Drivers/EepromFvb/FixupPcd.inf
   }
 
 ###################################################################################################
