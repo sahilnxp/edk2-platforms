@@ -67,7 +67,7 @@ RtcRead (
                                      (VOID *)&Req,
                                      NULL,  NULL);
   if (EFI_ERROR (Status)) {
-    BOOTTIME_DEBUG ((DEBUG_ERROR, "RTC read error at Addr:0x%x, Status = %r\n", RtcRegAddr, Status));
+    BOOTTIME_DEBUG ((DEBUG_ERROR, "%a, %u RTC read error at Addr:0x%x, Status = %r\n", __FUNCTION__, __LINE__, RtcRegAddr, Status));
   }
 
   return Val;
@@ -104,7 +104,7 @@ RtcWrite (
                                      (VOID *)&Req,
                                      NULL,  NULL);
   if (EFI_ERROR (Status)) {
-    BOOTTIME_DEBUG ((DEBUG_ERROR, "RTC write error at Addr:0x%x, Status = %r\n", RtcRegAddr, Status));
+    BOOTTIME_DEBUG ((DEBUG_ERROR, "%a, %u RTC write error at Addr:0x%x, Status = %r\n", __FUNCTION__, __LINE__, RtcRegAddr, Status));
   }
 
   return Status;

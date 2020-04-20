@@ -168,7 +168,7 @@ LibGetTime (
                                      (VOID *)&Req,
                                      NULL,  NULL);
   if (EFI_ERROR (Status)) {
-    BOOTTIME_DEBUG ((DEBUG_ERROR, "RTC read error at Addr:0x%x, Status = %r\n", RtcRegAddr, Status));
+    BOOTTIME_DEBUG ((DEBUG_ERROR, "%a, %u  RTC read error at Addr:0x%x, Status = %r\n", __FUNCTION__, __LINE__, RtcRegAddr, Status));
   }
 
   Req.OperationCount = 1;
@@ -181,7 +181,7 @@ LibGetTime (
                                      (VOID *)&Req,
                                      NULL,  NULL);
   if (EFI_ERROR (Status)) {
-    BOOTTIME_DEBUG ((DEBUG_ERROR, "RTC read error at Addr:0x%x, Status = %r\n", RtcRegAddr, Status));
+    BOOTTIME_DEBUG ((DEBUG_ERROR, "%a, %u RTC read error at Addr:0x%x, Status = %r\n", __FUNCTION__, __LINE__, RtcRegAddr, Status));
   }
 
   if (Regs.Control[2] & PCF2129_CTRL3_BIT_BLF) {

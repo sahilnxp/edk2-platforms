@@ -279,10 +279,12 @@ I2cTransferComplete (
   }
 
   if (Index == I2C_NUM_RETRIES) {
+    DEBUG ((DEBUG_ERROR, "%a, %u, EFI_TIMEOUT\n", __FUNCTION__, __LINE__));
     return EFI_TIMEOUT;
   }
 
   if (TestRxAck && (Reg & I2C_IBSR_RXAK)) {
+	    DEBUG ((DEBUG_ERROR, "%a, %u, EFI_NO_RESPONSE\n", __FUNCTION__, __LINE__));
     return EFI_NO_RESPONSE;
   }
 
@@ -460,6 +462,7 @@ I2cBusXfer (
   EFI_I2C_OPERATION  *Operation;
   EFI_STATUS         Status;
   BOOLEAN            IsLastOperation;
+  UINTN	LoopCount = 0;
 
   Regs = (I2C_REGS *)Base;
   IsLastOperation = FALSE;
@@ -477,7 +480,7 @@ I2cBusXfer (
   for (Index = 0, Operation = RequestPacket->Operation;
        Index < RequestPacket->OperationCount;
        Index++, Operation++) {
-    if (Index == (RequestPacket->OperationCount - 1)) {
+    if (Index == (RequestPacket->OperationCount - 1) && (LoopCount > 0)) {
       IsLastOperation = TRUE;
     }
     // Send repeat start after first transmit/recieve
@@ -498,6 +501,7 @@ I2cBusXfer (
     if (EFI_ERROR (Status)) {
       goto ErrorExit;
     }
+    LoopCount++;
   }
 
 ErrorExit:

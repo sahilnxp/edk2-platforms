@@ -29,6 +29,7 @@
 #include <Library/SocClockLib.h>
 #include <Library/I2cLib.h>
 #include <Library/MmServicesTableLib.h>
+#include <Library/TimerLib.h>
 
 #include <Protocol/FirmwareVolumeBlock.h>
 #include <Protocol/SmmFirmwareVolumeBlock.h>
@@ -339,7 +340,11 @@ FvbRead (
 
   Instance = INSTANCE_FROM_FVB_THIS(This);
   if (Instance->Initialized == FALSE) {
-	  Instance->Initialize (Instance);
+	  Status = Instance->Initialize (Instance);
+	  if (EFI_ERROR(Status)) {
+	  	DEBUG ((DEBUG_INFO, "Initialization failed\n"));
+	  	return Status;
+	  }
   }
 
   // Cache the block size to avoid de-referencing pointers all the time
@@ -577,7 +582,7 @@ FvbEraseBlocks (
   UINT64             EepromAddr = 0;
   EFI_STATUS	Status = EFI_SUCCESS;
   UINT32 Index = 0;
-  UINT64 EraseBuff[4];
+  UINT64 EraseBuff[32];
 
   Instance = INSTANCE_FROM_FVB_THIS(This);
 
@@ -606,10 +611,11 @@ FvbEraseBlocks (
         if (EFI_ERROR(Status)) {
           DEBUG ((DEBUG_ERROR, "EepromWrite failed\n"));
         }
+	 MicroSecondDelay(3000000);
        }
 	// FIXME first write then set the in memory buffer
 	SetMem64 ((VOID *)Instance->MemBaseAddress + Start * BLOCK_SIZE, Length * BLOCK_SIZE, ~0UL);
-	  
+	
 	//  Base = (VOID *)Instance->MemBaseAddress + Start * BLOCK_SIZE;
 	//  File = GetFileAndOffset (Base, &RelativeOffset);
 	//  SendSvc (SP_SVC_RPMB_WRITE, File, (UINTN) Base, NumBytes, RelativeOffset);
@@ -665,7 +671,7 @@ FvbGetBlockSize (
   return EFI_SUCCESS;
 }
 
-#if 0
+#if 1
 STATIC
 EFI_STATUS
 EFIAPI
@@ -674,12 +680,22 @@ EraseFlashHeaders (
  )
 {
   EFI_STATUS Status;
-  UINT64 EraseBuff[4];
+  UINT64 EraseBuff[32];
 
   SetMem64 (EraseBuff, Instance->BlockSize, ~0UL);
   hexdump ("", (char*)EraseBuff, Instance->BlockSize);
-
+  
   Status = EepromWrite(EEPROM_VARIABLE_STORE_ADDR, 0,
+                                        EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
+                                        Instance->BlockSize);
+  if (EFI_ERROR(Status)) {
+    DEBUG ((DEBUG_ERROR, "EepromWrite failed for EEPROM_FTW_WORKING_SPACE_ADDR\n"));
+    goto exit;
+  }
+
+  MicroSecondDelay(3000000);
+
+  Status = EepromWrite(EEPROM_FTW_WORKING_SPACE_ADDR, 0,
                                         EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
                                         Instance->BlockSize);
   if (EFI_ERROR(Status)) {
@@ -687,13 +703,7 @@ EraseFlashHeaders (
     goto exit;
   }
 
-  Status = EepromWrite(EEPROM_FTW_WORKING_SPACE_ADDR, 0,
-                                        EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
-                                        Instance->BlockSize);
-  if (EFI_ERROR(Status)) {
-    DEBUG ((DEBUG_ERROR, "EepromWrite failed for EEPROM_FTW_WORKING_SPACE_ADDR\n"));
-    goto exit;
-  }
+  MicroSecondDelay(3000000);
 
   Status = EepromWrite(EEPROM_FTW_SPARE_SPACE_ADDR, 0,
                                         EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
@@ -952,6 +962,7 @@ FvbInitialize (
     DEBUG ((DEBUG_ERROR, "ReadEntireFlash failed\n"));
     goto exit;
   }
+  DbgMem ("In Flash data", Instance->MemBaseAddress);
 
   FwVolHeader = (EFI_FIRMWARE_VOLUME_HEADER *) mFlashNvStorageVariableBase;
   Status = ValidateFvHeader(FwVolHeader);
@@ -961,7 +972,7 @@ FvbInitialize (
 
     // Reset memory
     SetMem64 ((VOID *)Instance->MemBaseAddress, NBLOCKS * BLOCK_SIZE, ~0UL);
-#if 0
+#if 1
     Status = EraseFlashHeaders(Instance);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, " EraseFlashHeaders failed \n"));
