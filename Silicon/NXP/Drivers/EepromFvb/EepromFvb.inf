@@ -1,0 +1,71 @@
+#  @file
+#
+#  EEPROM FVB Driver Implementation
+#
+#  Copyright 2020 NXP
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution. The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+#
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = EepromFvb
+  FILE_GUID                      = 7243dff1-0cb8-4b48-9285-724077ba680a
+  MODULE_TYPE                    = MM_STANDALONE
+  VERSION_STRING                 = 0.1
+  PI_SPECIFICATION_VERSION       = 0x00010032
+  ENTRY_POINT                    = EepromInitialize
+
+[Sources]
+  EepromFvb.c
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  ArmPlatformPkg/ArmPlatformPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MdePkg/MdePkg.dec
+  Silicon/NXP/NxpQoriqLs.dec
+  StandaloneMmPkg/StandaloneMmPkg.dec
+
+[LibraryClasses]
+  ArmLib
+  BaseMemoryLib
+  SocClockLib
+  I2cLib
+  MemoryAllocationLib
+  StandaloneMmDriverEntryPoint
+
+[Guids]
+  gEfiAuthenticatedVariableGuid
+  gEfiSystemNvDataFvGuid
+  gEfiVariableGuid
+
+[FixedPcd]
+  gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cSize
+  gNxpQoriqLsTokenSpaceGuid.PcdNumI2cController
+
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cBus
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cSpeed
+
+[Pcd]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
+
+[Protocols]
+  gEfiSmmFirmwareVolumeBlockProtocolGuid          ## PRODUCES
+
+
+[Depex]
+  TRUE
