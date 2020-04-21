@@ -278,13 +278,17 @@ I2cTransferComplete (
     MicroSecondDelay (1);
   }
 
+  if (Reg & I2C_IBSR_IBAL) {
+    DEBUG ((DEBUG_ERROR, "Arbitration Lost \n"));
+  }
+
   if (Index == I2C_NUM_RETRIES) {
     DEBUG ((DEBUG_ERROR, "%a, %u, EFI_TIMEOUT\n", __FUNCTION__, __LINE__));
     return EFI_TIMEOUT;
   }
 
   if (TestRxAck && (Reg & I2C_IBSR_RXAK)) {
-	    DEBUG ((DEBUG_ERROR, "%a, %u, EFI_NO_RESPONSE\n", __FUNCTION__, __LINE__));
+//    DEBUG ((DEBUG_ERROR, "%a, %u, EFI_NO_RESPONSE\n", __FUNCTION__, __LINE__));
     return EFI_NO_RESPONSE;
   }
 
@@ -379,6 +383,7 @@ I2cWrite (
       return Status;
     }
   }
+
   return EFI_SUCCESS;
 }
 
@@ -434,6 +439,46 @@ I2cStart (
 
   return Status;
 }
+
+EFI_STATUS
+I2cWriteCycleComplete (
+  IN UINTN                  Base,
+  IN UINT32                 SlaveAddress
+  )
+{
+  I2C_REGS           *Regs;
+  EFI_STATUS         Status;
+//  UINT8			Reg;
+
+  Regs = (I2C_REGS *)Base;
+
+  Status = I2cBusTestBusBusy (Regs, I2C_BUS_TEST_IDLE);
+  if (EFI_ERROR (Status)) {
+  	DEBUG ((DEBUG_ERROR, "Bus Busy\n"));
+    goto ErrorExit;
+  }
+
+  do {
+    Status = I2cStart (Regs);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "Exiting I2cWriteCycleComplete\n"));
+      goto ErrorExit;
+    }
+  
+    // Write Slave Address
+    MmioWrite8 ((UINTN)&Regs->Ibdr, (SlaveAddress << BIT0) & (UINT8)(~BIT0));
+    Status = I2cTransferComplete (Regs, I2C_BUS_TEST_RX_ACK);
+    if (Status == EFI_SUCCESS) {
+      DEBUG ((DEBUG_ERROR, "Write Cycle Status = %x\n", Status));
+      break;
+    }
+  } while(TRUE);
+
+ErrorExit:
+  I2cStop (Regs);
+  return Status;
+}
+
 
 /**
   Transfer data to/from I2c slave device
@@ -507,7 +552,6 @@ I2cBusXfer (
 ErrorExit:
 
   I2cStop (Regs);
-
   return Status;
 }
 
@@ -647,10 +691,13 @@ I2cBusWriteReg (
 
   RequestPacket.OperationCount = OperationCount;
 
-  Status = I2cBusXfer (
-             Base, SlaveAddress,
-             (EFI_I2C_REQUEST_PACKET *)&RequestPacket
-             );
-
+  DEBUG ((DEBUG_ERROR, "Checking EEPROM Write Cycle\n"));
+  Status = I2cWriteCycleComplete(Base, SlaveAddress);
+  if (Status == EFI_SUCCESS) {
+    Status = I2cBusXfer (
+               Base, SlaveAddress,
+               (EFI_I2C_REQUEST_PACKET *)&RequestPacket
+               );
+  }
   return Status;
 }

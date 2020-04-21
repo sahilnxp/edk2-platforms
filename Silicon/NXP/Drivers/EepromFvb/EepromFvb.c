@@ -499,6 +499,8 @@ FvbWrite (
   // Update the memory copy
   CopyMem (Base, Buffer, *NumBytes);
 
+  hexdump("", (char *)Buffer, *NumBytes);
+
   EepromAddr = ((Lba % 256) * BlockSize) + Offset;
 //  EepromAddr = ((Lba % 16) * BlockSize) + Offset;
   EepromSlaveAddr = GetEepromSlaveAddress(Lba);
@@ -582,11 +584,16 @@ FvbEraseBlocks (
   UINT64             EepromAddr = 0;
   EFI_STATUS	Status = EFI_SUCCESS;
   UINT32 Index = 0;
-  UINT64 EraseBuff[32];
+  UINT8 *EraseBuff;
 
   Instance = INSTANCE_FROM_FVB_THIS(This);
+  EraseBuff = (UINT8 *)AllocateZeroPool(256);
+  if (!EraseBuff) {
+  	Status = EFI_DEVICE_ERROR;
+	goto exit;
+  }
 
-  SetMem64 (EraseBuff, Instance->BlockSize, ~0UL);
+  SetMem64 ((VOID *)EraseBuff, Instance->BlockSize, ~0UL);
 
   DEBUG ((DEBUG_INFO, "***** %a, %u ******\n", __FUNCTION__, __LINE__));
   VA_START (Args, This);
@@ -611,19 +618,15 @@ FvbEraseBlocks (
         if (EFI_ERROR(Status)) {
           DEBUG ((DEBUG_ERROR, "EepromWrite failed\n"));
         }
-	 MicroSecondDelay(3000000);
+//	 MicroSecondDelay(3000000);
        }
 	// FIXME first write then set the in memory buffer
 	SetMem64 ((VOID *)Instance->MemBaseAddress + Start * BLOCK_SIZE, Length * BLOCK_SIZE, ~0UL);
-	
-	//  Base = (VOID *)Instance->MemBaseAddress + Start * BLOCK_SIZE;
-	//  File = GetFileAndOffset (Base, &RelativeOffset);
-	//  SendSvc (SP_SVC_RPMB_WRITE, File, (UINTN) Base, NumBytes, RelativeOffset);
-	  //DEBUG ((EFI_D_INFO, "%a Erase %lu LEN %lu Buf %p\n", __func__, Start, Length, Base));
-	  //OpTeeRpmbFvWrite(&Instance->FvbProtocol, Start , 0, &NumBytes, Base);
   }
 
   VA_END (Args);
+exit:
+  FreePool((VOID *)EraseBuff);
   return EFI_SUCCESS;
 }
 
@@ -682,30 +685,42 @@ EraseFlashHeaders (
   EFI_STATUS Status;
   UINT64 EraseBuff[32];
 
-  SetMem64 (EraseBuff, Instance->BlockSize, ~0UL);
-  hexdump ("", (char*)EraseBuff, Instance->BlockSize);
-  
-  Status = EepromWrite(EEPROM_VARIABLE_STORE_ADDR, 0,
-                                        EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
-                                        Instance->BlockSize);
-  if (EFI_ERROR(Status)) {
-    DEBUG ((DEBUG_ERROR, "EepromWrite failed for EEPROM_FTW_WORKING_SPACE_ADDR\n"));
-    goto exit;
+#if 0
+  UINT8 *EraseBuff;
+
+  EraseBuff = (UINT8 *)AllocateZeroPool(256);
+  if (!EraseBuff) {
+  	Status = EFI_DEVICE_ERROR;
+	goto exit;
   }
+#endif
+  SetMem64 ((VOID *)EraseBuff, Instance->BlockSize, ~0UL);
 
-  MicroSecondDelay(3000000);
+//  hexdump ("", (char*)EraseBuff, Instance->BlockSize);
 
-  Status = EepromWrite(EEPROM_FTW_WORKING_SPACE_ADDR, 0,
+  Status = EepromWrite(EEPROM_VARIABLE_STORE_ADDR, 0x0,
                                         EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
                                         Instance->BlockSize);
   if (EFI_ERROR(Status)) {
     DEBUG ((DEBUG_ERROR, "EepromWrite failed for EEPROM_VARIABLE_STORE_ADDR\n"));
     goto exit;
   }
+//  hexdump ("", (char*)EraseBuff, Instance->BlockSize);
 
-  MicroSecondDelay(3000000);
+//  MicroSecondDelay(3000000);
 
-  Status = EepromWrite(EEPROM_FTW_SPARE_SPACE_ADDR, 0,
+  Status = EepromWrite(EEPROM_FTW_WORKING_SPACE_ADDR, 0x0,
+                                        EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
+                                        Instance->BlockSize);
+  if (EFI_ERROR(Status)) {
+    DEBUG ((DEBUG_ERROR, "EepromWrite failed for EEPROM_FTW_WORKING_SPACE_ADDR\n"));
+    goto exit;
+  }
+//  hexdump ("", (char*)EraseBuff, Instance->BlockSize);
+
+//  MicroSecondDelay(3000000);
+
+  Status = EepromWrite(EEPROM_FTW_SPARE_SPACE_ADDR, 0x0,
                                         EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)&EraseBuff,
                                         Instance->BlockSize);
   if (EFI_ERROR(Status)) {
@@ -714,6 +729,7 @@ EraseFlashHeaders (
   }
 
 exit:
+//  FreePool((VOID *)EraseBuff);
   return Status;
 }
 #endif
@@ -781,8 +797,6 @@ ValidateFvHeader (
   VARIABLE_STORE_HEADER       *VariableStoreHeader;
   UINTN                       VariableStoreLength;
   UINTN                       FvLength;
-
-  //FwVolHeader = (EFI_FIRMWARE_VOLUME_HEADER*)Instance->RegionBaseAddress;
 
   FvLength = PcdGet32(PcdFlashNvStorageVariableSize) +
              PcdGet32(PcdFlashNvStorageFtwWorkingSize) +
@@ -966,12 +980,14 @@ FvbInitialize (
 
   FwVolHeader = (EFI_FIRMWARE_VOLUME_HEADER *) mFlashNvStorageVariableBase;
   Status = ValidateFvHeader(FwVolHeader);
+  Status = EFI_DEVICE_ERROR;
   if (EFI_ERROR (Status)) {
     // There is no valid header, so time to install one.
     DEBUG ((DEBUG_INFO, "%a: The FVB Header is not valid.\n", __FUNCTION__));
 
     // Reset memory
     SetMem64 ((VOID *)Instance->MemBaseAddress, NBLOCKS * BLOCK_SIZE, ~0UL);
+
 #if 1
     Status = EraseFlashHeaders(Instance);
     if (EFI_ERROR (Status)) {
@@ -979,6 +995,7 @@ FvbInitialize (
       return Status;
     }
 #endif
+
     DbgMem ("In Memory data", Instance->MemBaseAddress);
     DEBUG ((DEBUG_INFO, "%a: Installing a correct one for this volume.\n",
       __FUNCTION__));
