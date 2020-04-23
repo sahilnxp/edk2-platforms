@@ -57,6 +57,7 @@
 
 [PcdsFeatureFlag.common]
   gEfiMdeModulePkgTokenSpaceGuid.PcdInstallAcpiSdtProtocol|TRUE
+  gEfiMdeModulePkgTokenSpaceGuid.PcdEnableVariableRuntimeCache|FALSE
 
 [PcdsFixedAtBuild.common]
 
@@ -168,12 +169,13 @@
   #
   # Architectural Protocols
   #
-  MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf{
-     <LibraryClasses>
-     NULL|MdeModulePkg/Library/VarCheckUefiLib/VarCheckUefiLib.inf
-     NULL|EmbeddedPkg/Library/NvVarStoreFormattedLib/NvVarStoreFormattedLib.inf
+  MdeModulePkg/Universal/Variable/RuntimeDxe/VariableSmmRuntimeDxe.inf {
+      <LibraryClasses>
+      NULL|StandaloneMmPkg/Library/VariableMmDependency/VariableMmDependency.inf
   }
-  MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
+
+  OpteePkg/Drivers/OpteeClientDxe/OpteeClientDxe.inf
+  OpteePkg/Drivers/MmCommunicationDxe/MmCommunication.inf
 
   ArmPkg/Drivers/GenericWatchdogDxe/GenericWatchdogDxe.inf
   Silicon/NXP/Drivers/I2cDxe/I2cDxe.inf

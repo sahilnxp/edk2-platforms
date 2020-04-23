@@ -122,9 +122,11 @@ READ_LOCK_STATUS   = TRUE
   INF MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
   INF MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
   INF MdeModulePkg/Universal/MonotonicCounterRuntimeDxe/MonotonicCounterRuntimeDxe.inf
-  INF MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
-  INF MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
+  INF MdeModulePkg/Universal/Variable/RuntimeDxe/VariableSmmRuntimeDxe.inf
   INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
+
+  INF OpteePkg/Drivers/OpteeClientDxe/OpteeClientDxe.inf
+  INF OpteePkg/Drivers/MmCommunicationDxe/MmCommunication.inf
 
   INF Silicon/NXP/Drivers/I2cDxe/I2cDxe.inf
 
