@@ -126,7 +126,7 @@ READ_LOCK_STATUS   = TRUE
   INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
 
   INF OpteePkg/Drivers/OpteeClientDxe/OpteeClientDxe.inf
-  INF OpteePkg/Drivers/MmCommunicationDxe/MmCommunication.inf
+  INF ArmPkg/Drivers/MmCommunicationOpteeDxe/MmCommunication.inf
 
   INF Silicon/NXP/Drivers/I2cDxe/I2cDxe.inf
 

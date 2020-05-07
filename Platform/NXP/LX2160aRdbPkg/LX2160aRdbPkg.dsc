@@ -175,7 +175,7 @@
   }
 
   OpteePkg/Drivers/OpteeClientDxe/OpteeClientDxe.inf
-  OpteePkg/Drivers/MmCommunicationDxe/MmCommunication.inf
+  ArmPkg/Drivers/MmCommunicationOpteeDxe/MmCommunication.inf
 
   ArmPkg/Drivers/GenericWatchdogDxe/GenericWatchdogDxe.inf
   Silicon/NXP/Drivers/I2cDxe/I2cDxe.inf
