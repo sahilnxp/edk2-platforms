@@ -174,8 +174,11 @@
       NULL|StandaloneMmPkg/Library/VariableMmDependency/VariableMmDependency.inf
   }
 
-  OpteePkg/Drivers/OpteeClientDxe/OpteeClientDxe.inf
-  OpteePkg/Drivers/MmCommunicationDxe/MmCommunication.inf
+  #OpteePkg/Drivers/OpteeClientDxe/OpteeClientDxe.inf
+  ArmPkg/Drivers/MmCommunicationOpteeDxe/MmCommunication.inf {
+      <LibraryClasses>
+      OpteeLib|ArmPkg/Library/OpteeLib/OpteeLib.inf
+  }
 
   ArmPkg/Drivers/GenericWatchdogDxe/GenericWatchdogDxe.inf
   Silicon/NXP/Drivers/I2cDxe/I2cDxe.inf
