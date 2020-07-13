@@ -600,6 +600,9 @@ FvbEraseBlocks (
     Length = VA_ARG (Args, UINTN);
     End = Start + Length;
 
+    if (End >= Instance->NBlocks)
+      return EFI_INVALID_PARAMETER;
+
     for (Index = Start; Index < End; Index++) {
       EepromSlaveAddr = GetEepromSlaveAddress(Index);
       EepromAddr = ((Index % BLOCKS_IN_ONE_PARTITION) * (Instance->BlockSize));
@@ -658,7 +661,9 @@ FvbGetBlockSize (
   MEM_INSTANCE *Instance;
 
   Instance = INSTANCE_FROM_FVB_THIS(This);
-  *NumberOfBlocks = Instance->NBlocks;
+  if (Lba >= Instance->NBlocks)
+    return EFI_INVALID_PARAMETER;
+  *NumberOfBlocks = Instance->NBlocks - (UINTN) Lba;
   *BlockSize = Instance->BlockSize;
 
   return EFI_SUCCESS;
@@ -823,7 +828,7 @@ InitializeFvAndVariableStoreHeaders (
   FirmwareVolumeHeader->HeaderLength = sizeof(EFI_FIRMWARE_VOLUME_HEADER) +
                                        sizeof(EFI_FV_BLOCK_MAP_ENTRY);
   FirmwareVolumeHeader->Revision = EFI_FVH_REVISION;
-  FirmwareVolumeHeader->BlockMap[0].NumBlocks = NBLOCKS + 1;
+  FirmwareVolumeHeader->BlockMap[0].NumBlocks = NBLOCKS;
   FirmwareVolumeHeader->BlockMap[0].Length      = BLOCK_SIZE;
   FirmwareVolumeHeader->BlockMap[1].NumBlocks = 0;
   FirmwareVolumeHeader->BlockMap[1].Length      = 0;
