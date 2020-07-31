@@ -110,7 +110,6 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxVariableSize|0x2000
   gEfiMdeModulePkgTokenSpaceGuid.PcdMaxAuthVariableSize|0x2800
 
-  gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr|0x40419000
   gNxpQoriqLsTokenSpaceGuid.PcdI2cSize|0x10000
   gNxpQoriqLsTokenSpaceGuid.PcdNumI2cController|8
 
@@ -130,6 +129,7 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase|0x0
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize|0x00010000
   gEfiMdeModulePkgTokenSpaceGuid.PcdVariableStoreSize|0x00010000
+  gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr|0x0
 
 ###################################################################################################
 #
@@ -155,7 +155,10 @@
   #
   StandaloneMmPkg/Core/StandaloneMmCore.inf
   StandaloneMmPkg/Drivers/StandaloneMmCpu/AArch64/StandaloneMmCpu.inf
-  Silicon/NXP/Drivers/I2cMm/I2cMm.inf
+  Silicon/NXP/Drivers/I2cMm/I2cMm.inf {
+    <LibraryClasses>
+      NULL|Silicon/NXP/Drivers/I2cMm/FixupI2cPcd.inf
+  }
   Silicon/NXP/Drivers/RtcMm/RtcMm.inf
   Silicon/NXP/Drivers/EepromFvb/EepromFvb.inf
   MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteStandaloneMm.inf {

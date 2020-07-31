@@ -133,7 +133,7 @@ I2cMmEntryPoint (
   EFI_STATUS                Status;
   UINTN                     BusFrequency;
 
-  mI2cRegs = (EFI_PHYSICAL_ADDRESS)FixedPcdGet64 (PcdI2c5BaseAddr);
+  mI2cRegs = (EFI_PHYSICAL_ADDRESS)PcdGet64 (PcdI2c5BaseAddr);
 
   Status = mI2c.Reset (&mI2c);
   if (EFI_ERROR (Status)) {

@@ -1,0 +1,40 @@
+## @file
+#  Instance of Base Memory Library without assembly.
+#
+#  Copyright (c) 2020, Linaro Ltd. All rights reserved.
+#  Copyright 2020 NXP
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = FixupI2cPcd
+  FILE_GUID                      = 7ec93dc3-b004-4223-87ec-1d26a0fec542
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 0.1
+  LIBRARY_CLASS                  = I2cPcdFixup|MM_STANDALONE
+  CONSTRUCTOR                    = FixI2cPcd
+
+[Sources]
+  FixupI2cPcd.c
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MdePkg/MdePkg.dec
+  Silicon/NXP/NxpQoriqLs.dec
+
+[LibraryClasses]
+  ArmSvcLib
+  ArmLib
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  MmServicesTableLib
+  PcdLib
+
+[Pcd]
+  gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr
