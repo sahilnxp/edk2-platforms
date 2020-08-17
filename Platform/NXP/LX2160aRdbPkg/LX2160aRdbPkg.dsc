@@ -38,9 +38,14 @@
   #
   # Architectural Protocols
   #
-  MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf {
-    <PcdsFixedAtBuild>
-    gEfiMdeModulePkgTokenSpaceGuid.PcdEmuVariableNvModeEnable|TRUE
+  MdeModulePkg/Universal/Variable/RuntimeDxe/VariableSmmRuntimeDxe.inf {
+      <LibraryClasses>
+      NULL|StandaloneMmPkg/Library/VariableMmDependency/VariableMmDependency.inf
+  }
+
+  ArmPkg/Drivers/MmCommunicationOpteeDxe/MmCommunication.inf {
+      <LibraryClasses>
+      OpteeLib|ArmPkg/Library/OpteeLib/OpteeLib.inf
   }
 
  ##

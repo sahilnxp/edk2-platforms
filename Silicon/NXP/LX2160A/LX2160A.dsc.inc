@@ -38,6 +38,7 @@
 
 [PcdsFeatureFlag]
   gNxpQoriqLsTokenSpaceGuid.PcdI2cErratumA009203|TRUE
+  gEfiMdeModulePkgTokenSpaceGuid.PcdEnableVariableRuntimeCache|FALSE
 
 ################################################################################
 #

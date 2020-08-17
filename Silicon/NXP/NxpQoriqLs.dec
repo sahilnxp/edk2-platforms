@@ -23,6 +23,7 @@
 [Guids.common]
   gNxpQoriqLsTokenSpaceGuid      = {0x98657342, 0x4aee, 0x4fc6, {0xbc, 0xb5, 0xff, 0x45, 0xb7, 0xa8, 0x71, 0xf2}}
   gNxpNonDiscoverableI2cMasterGuid = { 0x5f2c099c, 0x54a3, 0x4dd4, {0x9e, 0xc5, 0xe9, 0x12, 0x8c, 0x36, 0x81, 0x6a}}
+  gEfiSmmPcf2129ProtocolGuid     = {0x352d6757, 0x50a0, 0x402b, {0xa6, 0xa4, 0x2b, 0x86, 0x32, 0x7f, 0x8c, 0x11}}
 
 [PcdsFeatureFlag]
   gNxpQoriqLsTokenSpaceGuid.PcdI2cErratumA009203|FALSE|BOOLEAN|0x00000315
@@ -37,6 +38,36 @@
   gNxpQoriqLsTokenSpaceGuid.PcdPcieLutDbg|0x0|UINT32|0x00000503
   gNxpQoriqLsTokenSpaceGuid.PcdSerDesLanes|0x0|UINT8|0x00000504
 
+  #
+  # Pcds for I2C Controller
+  #
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cSize|0x0|UINT32|0x00000109
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cBus|0|UINT32|0x00000001
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cSpeed|0|UINT32|0x00000002
+  gNxpQoriqLsTokenSpaceGuid.PcdNumI2cController|0|UINT32|0x00000003
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cSlaveAddress|0|UINT32|0x00000004
+  # The I2cDivisor is determined like this
+  # I2cDivisor = (I2cClock + I2cSpeed - 1) / I2cSpeed
+  # I2cClock is the input clock to I2c controller, I2cSpeed is the I2c bus speed
+  # In early init phase when we don't know the I2cClock, we need to setup the
+  # I2c controller to be able to read SysClock (and hence I2cClock) from the
+  # clock generator or FPGA connected to I2c bus.
+  # Therefore, this Pcd selects the Divisor to use in early init phase.
+  gNxpQoriqLsTokenSpaceGuid.PcdI2cEarlyDivisor|6144|UINT16|0x00000362
+
+  #
+  # Pcds for Pcf2129 I2C MUX
+  #
+  gNxpQoriqLsTokenSpaceGuid.PcdIsRtcDeviceMuxed|FALSE|BOOLEAN|0x00000005
+  gNxpQoriqLsTokenSpaceGuid.PcdMuxDeviceAddress|0|UINT32|0x00000006
+  gNxpQoriqLsTokenSpaceGuid.PcdMuxControlRegOffset|0|UINT32|0x00000007
+  gNxpQoriqLsTokenSpaceGuid.PcdMuxRtcChannelValue|0|UINT32|0x00000008
+  gNxpQoriqLsTokenSpaceGuid.PcdMuxDefaultChannelValue|0|UINT32|0x00000009
+
 [PcdsDynamic.common]
   gNxpQoriqLsTokenSpaceGuid.PcdPciCfgShiftEnable|FALSE|BOOLEAN|0x00000600
   gNxpQoriqLsTokenSpaceGuid.PcdPciLsGen4Ctrl|FALSE|BOOLEAN|0x00000601
+  gNxpQoriqLsTokenSpaceGuid.PcdPciHideRootPort|FALSE|BOOLEAN|0x00000602
+
+[PcdsPatchableInModule]
+  gNxpQoriqLsTokenSpaceGuid.PcdI2c5BaseAddr|0x0|UINT64|0x0000012F
