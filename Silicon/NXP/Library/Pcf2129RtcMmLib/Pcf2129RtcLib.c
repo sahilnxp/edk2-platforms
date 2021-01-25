@@ -29,11 +29,12 @@
 #include <Library/UefiRuntimeLib.h>
 
 #include <Protocol/Pcf2129Mm.h>
+#include <Protocol/MmCommunication2.h>
 #include <Protocol/SmmCommunication.h>
 
 #define BOOTTIME_DEBUG(x)       do { if (!EfiAtRuntime()) DEBUG (x); } while (0)
 
-STATIC EFI_SMM_COMMUNICATION_PROTOCOL  *mSmmCommunication        = NULL;
+STATIC EFI_MM_COMMUNICATION2_PROTOCOL  *mMmCommunication2        = NULL;
 STATIC UINT8                           *mPcf2129Header           = NULL;
 STATIC EFI_EVENT                  mRtcVirtualAddrChangeEvent;
 
@@ -93,7 +94,7 @@ LibGetTime (
 
   Status = EFI_SUCCESS;
 
-  if (mPcf2129Header == NULL || mSmmCommunication == NULL) {
+  if (mPcf2129Header == NULL || mMmCommunication2 == NULL) {
     return EFI_DEVICE_ERROR;
   }
 
@@ -103,7 +104,7 @@ LibGetTime (
   SmmPcf2129Header = (SMM_PCF2129_COMMUNICATE_HEADER *)SmmCommunicateHeader->Data;
   SmmPcf2129Header->Function = FUNCTION_GET_TIME;
 
-  Status = mSmmCommunication->Communicate(mSmmCommunication, mPcf2129Header, &CommSize);
+  Status = mMmCommunication2->Communicate(mMmCommunication2, mPcf2129Header, mPcf2129Header, &CommSize);
   ASSERT_EFI_ERROR (Status);
 
   if (EFI_ERROR (SmmPcf2129Header->ReturnStatus)) {
@@ -148,7 +149,7 @@ LibSetTime (
 
   Status = EFI_SUCCESS;
 
-  if (mPcf2129Header == NULL || mSmmCommunication == NULL) {
+  if (mPcf2129Header == NULL || mMmCommunication2 == NULL) {
     return EFI_DEVICE_ERROR;
   }
 
@@ -167,7 +168,7 @@ LibSetTime (
 
   CommSize = sizeof (SMM_PCF2129_COMMUNICATE_HEADER) + sizeof (EFI_MM_COMMUNICATE_HEADER);
 
-  Status = mSmmCommunication->Communicate(mSmmCommunication, mPcf2129Header, &CommSize);
+  Status = mMmCommunication2->Communicate(mMmCommunication2, mPcf2129Header, mPcf2129Header, &CommSize);
   ASSERT_EFI_ERROR (Status);
 
   if (EFI_ERROR (SmmPcf2129Header->ReturnStatus)) {
@@ -240,7 +241,7 @@ LibRtcVirtualNotifyEvent (
   IN VOID             *Context
   )
 {
-  EfiConvertPointer (0x0, (VOID **)&mSmmCommunication);
+  EfiConvertPointer (0x0, (VOID **)&mMmCommunication2);
   EfiConvertPointer (0x0, (VOID **)&mPcf2129Header);
 }
 
@@ -267,7 +268,7 @@ LibRtcInitialize (
   UINTN                         Pcf2129HeaderSize;
   EFI_SMM_COMMUNICATE_HEADER    *SmmCommunicateHeader;
 
-  Status = gBS->LocateProtocol (&gEfiSmmCommunicationProtocolGuid, NULL, (VOID **) &mSmmCommunication);
+  Status = gBS->LocateProtocol (&gEfiMmCommunication2ProtocolGuid, NULL, (VOID **) &mMmCommunication2);
   ASSERT_EFI_ERROR (Status);
   //
   // Allocate memory for Pcf2129 communicate buffer.

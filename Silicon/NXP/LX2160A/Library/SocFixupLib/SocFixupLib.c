@@ -170,7 +170,7 @@ SocGetSvr (
   Svr = GurRead ((UINTN)&GurBase->Svr);
 
   /* Store the SVR value */
-  PcdSet32(PcdSocSvr, (UINT32)Svr);
+  PcdSet32S(PcdSocSvr, (UINT32)Svr);
 
   return Svr;
 }

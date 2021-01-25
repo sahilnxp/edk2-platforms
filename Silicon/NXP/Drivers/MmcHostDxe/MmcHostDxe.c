@@ -519,7 +519,7 @@ ConstructHostInstance (
 
   Status = gBS->InstallMultipleProtocolInterfaces (
              &Handle,
-             &gEfiMmcHostProtocolGuid,
+             &gEmbeddedMmcHostProtocolGuid,
              &MmcHostInstance->MmcHostProtocol,
              NULL
              );

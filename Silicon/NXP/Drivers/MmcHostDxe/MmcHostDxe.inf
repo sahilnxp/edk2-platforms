@@ -38,7 +38,8 @@
   UefiDriverEntryPoint
 
 [Protocols]
-  gEfiMmcHostProtocolGuid
+  gEmbeddedMmcHostProtocolGuid
+#  gEfiMmcHostProtocolGuid
 
 [Guids]
   gFdtTableGuid

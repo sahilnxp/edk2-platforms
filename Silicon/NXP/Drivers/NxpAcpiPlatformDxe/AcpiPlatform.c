@@ -285,7 +285,7 @@ AcpiPlatformEntryPoint (
       }
 
       if (TableHeader->Signature == EFI_ACPI_6_2_IO_REMAPPING_TABLE_SIGNATURE) {
-        PcdSet64 (PcdIortTablePtr, (UINT64)CurrentTable);
+        PcdSet64S (PcdIortTablePtr, (UINT64)CurrentTable);
         //
         // Delay installing the ACPI tables until root bridges are
         // connected. The entry point's return status will only reflect the callback

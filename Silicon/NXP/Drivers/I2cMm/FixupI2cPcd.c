@@ -14,6 +14,9 @@
  * allocated memory
  *
 **/
+
+#include <IndustryStandard/ArmFfaSvc.h>
+
 #include <Library/ArmSvcLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/BaseLib.h>
@@ -33,15 +36,16 @@ GetI2CAddress (
 
   ZeroMem (&SvcArgs, sizeof (ARM_SVC_ARGS));
 
-  SvcArgs.Arg0 = SP_SVC_GET_I2C_ADDR;
-  SvcArgs.Arg1 = 0;
+  SvcArgs.Arg0 = ARM_SVC_ID_FFA_MSG_SEND_DIRECT_REQ_AARCH64;
+  SvcArgs.Arg1 = 5;
+  SvcArgs.Arg3 = SP_SVC_GET_I2C_ADDR;
   ArmCallSvc (&SvcArgs);
 
   DEBUG ((EFI_D_INFO, "%a: SVC Call ret 0x%x, 0x%lx\n", __func__,
     SvcArgs.Arg0, SvcArgs.Arg1));
 
-  *Address = SvcArgs.Arg1;
-  return SvcArgs.Arg0;
+  *Address = SvcArgs.Arg4;
+  return SvcArgs.Arg3;
 }
 
 EFI_STATUS

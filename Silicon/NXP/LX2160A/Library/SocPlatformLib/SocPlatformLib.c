@@ -24,7 +24,7 @@ SocPcieCfgShift (
   Svr = GurRead ((UINTN)&GurBase->Svr);
 
   if ((Svr & SVR_LX2160A_REV_MASK) == SVR_LX2160A_REV2) {
-    PcdSetBool(PcdPciCfgShiftEnable, TRUE);
+    PcdSetBoolS(PcdPciCfgShiftEnable, TRUE);
   }
 }
 
@@ -43,7 +43,7 @@ SocGetPcieCtrl (
   Svr = GurRead ((UINTN)&GurBase->Svr);
 
   if ((Svr & SVR_LX2160A_REV_MASK) == SVR_LX2160A_REV1) {
-    PcdSetBool(PcdPciLsGen4Ctrl, TRUE);
+    PcdSetBoolS(PcdPciLsGen4Ctrl, TRUE);
   }
 }
 
@@ -62,7 +62,7 @@ SocGetStreamIdAllocationScheme (
   Svr = GurRead ((UINTN)&GurBase->Svr);
 
   if (((Svr & SVR_LX2160A_REV_MASK) >> 8) == SVR_LX2160A) {
-    PcdSetBool(PcdPciStreamIdPerCtrl, TRUE);
+    PcdSetBoolS(PcdPciStreamIdPerCtrl, TRUE);
   }
 }
 
@@ -81,6 +81,6 @@ SocSetPciRootPort (
   Svr = GurRead ((UINTN)&GurBase->Svr);
 
   if ((Svr & SVR_LX2160A_REV_MASK) == SVR_LX2160A_REV2) {
-    PcdSetBool(PcdPciHideRootPort, TRUE);
+    PcdSetBoolS(PcdPciHideRootPort, TRUE);
   }
 }
