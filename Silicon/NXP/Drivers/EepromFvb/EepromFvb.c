@@ -592,7 +592,7 @@ FvbEraseBlocks (
 
   SetMem ((VOID *)EraseBuff, Instance->BlockSize, ~0);
 
-  DEBUG ((DEBUG_INFO, "%a: Starting Erase\n", __FUNCTION__));
+  DEBUG ((DEBUG_ERROR, "%a: Starting Erase\n", __FUNCTION__));
   VA_START (Args, This);
   for (Start = VA_ARG (Args, EFI_LBA);
     Start != EFI_LBA_LIST_TERMINATOR;
@@ -600,15 +600,20 @@ FvbEraseBlocks (
     Length = VA_ARG (Args, UINTN);
     End = Start + Length;
 
-    if (End >= Instance->NBlocks)
+    DEBUG ((DEBUG_ERROR, "%a: Start = %u, End = %u, Length = %u\n",
+			__FUNCTION__, Start, End, Length));
+    if (End > Instance->NBlocks)
       return EFI_INVALID_PARAMETER;
 
+    DEBUG ((DEBUG_ERROR, "HElloooo\n"));
     for (Index = Start; Index < End; Index++) {
       EepromSlaveAddr = GetEepromSlaveAddress(Index);
       EepromAddr = ((Index % BLOCKS_IN_ONE_PARTITION) * (Instance->BlockSize));
       Status = EepromWrite(EepromSlaveAddr, EepromAddr,
                  EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)EraseBuff,
                  Instance->BlockSize);
+      DEBUG ((DEBUG_ERROR, "EepromSlaveAddr = %u, EepromAddr = %lu, Status = %u\n", 
+			      EepromSlaveAddr, EepromAddr, Status));
       if (EFI_ERROR(Status)) {
         DEBUG ((DEBUG_ERROR, "%a: EepromWrite failed\n", __FUNCTION__));
       }
@@ -618,7 +623,7 @@ FvbEraseBlocks (
   }
 
   VA_END (Args);
-  DEBUG ((DEBUG_INFO, "%a: Erase Done \n", __FUNCTION__, __LINE__));
+  DEBUG ((DEBUG_ERROR, "%a: Erase Done returning EFI_SUCCESS\n", __FUNCTION__, __LINE__));
 
   return EFI_SUCCESS;
 }
@@ -742,7 +747,7 @@ ValidateFvHeader (
   //
   // Verify the header revision, header signature, length
   //
-  if (   (FwVolHeader->Revision  != EFI_FVH_REVISION)
+  if ((FwVolHeader->Revision  != EFI_FVH_REVISION)
       || (FwVolHeader->Signature != EFI_FVH_SIGNATURE)
       || (FwVolHeader->FvLength  != FvLength)
       )
@@ -805,8 +810,37 @@ InitializeFvAndVariableStoreHeaders (
   HeadersLength = sizeof(EFI_FIRMWARE_VOLUME_HEADER) +
                   sizeof(EFI_FV_BLOCK_MAP_ENTRY) +
                   sizeof(VARIABLE_STORE_HEADER);
-  Headers = mInstance.ShadowBuffer + EEPROM_ADDR_WIDTH_2BYTES;
 
+#if 0
+  UINT8                      *EraseBuff;
+  EraseBuff = mInstance.ShadowBuffer + EEPROM_ADDR_WIDTH_2BYTES;
+
+  SetMem ((VOID *)EraseBuff, mInstance.BlockSize, ~0);
+
+  DEBUG ((DEBUG_ERROR, "%a: Starting Erase Variable Store mInstance.BlockSize = %u \n", __FUNCTION__, mInstance.BlockSize));
+  Status = EepromWrite(EEPROM_VARIABLE_STORE_ADDR, 0x0,
+           EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)EraseBuff,
+           mInstance.BlockSize);
+  if (EFI_ERROR(Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: EepromWrite failed\n", __FUNCTION__));
+  }
+  DEBUG ((DEBUG_ERROR, "%a: Starting Erase FTW Working Space\n", __FUNCTION__));
+  Status = EepromWrite(EEPROM_FTW_WORKING_SPACE_ADDR, 0x0,
+           EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)EraseBuff,
+           mInstance.BlockSize);
+  if (EFI_ERROR(Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: EepromWrite failed\n", __FUNCTION__));
+  }
+
+  DEBUG ((DEBUG_ERROR, "%a: Starting Erase FTW Spare Space\n", __FUNCTION__));
+  Status = EepromWrite(EEPROM_FTW_SPARE_SPACE_ADDR, 0x0,
+           EEPROM_ADDR_WIDTH_2BYTES, (UINT8 *)EraseBuff,
+           mInstance.BlockSize);
+  if (EFI_ERROR(Status)) {
+    DEBUG ((DEBUG_ERROR, "%a: EepromWrite failed\n", __FUNCTION__));
+  }
+#endif
+  Headers = mInstance.ShadowBuffer + EEPROM_ADDR_WIDTH_2BYTES;
   //
   // EFI_FIRMWARE_VOLUME_HEADER
   //
